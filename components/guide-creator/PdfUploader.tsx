@@ -29,7 +29,7 @@ export default function PdfUploader({ onCapture }: Props) {
       const canvas = document.createElement('canvas')
       canvas.width = viewport.width
       canvas.height = viewport.height
-      await page.render({ canvasContext: canvas.getContext('2d')!, viewport }).promise
+      await page.render({ canvas, viewport } as Parameters<typeof page.render>[0]).promise
       images.push(canvas.toDataURL('image/png').split(',')[1])
     }
 

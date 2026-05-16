@@ -8,11 +8,43 @@ interface Props {
   onResponse: (response: SessionResponse) => void
 }
 
+interface SpeechRecognitionResult {
+  readonly length: number
+  [index: number]: { transcript: string; confidence: number }
+}
+interface SpeechRecognitionResultList {
+  readonly length: number
+  [index: number]: SpeechRecognitionResult
+}
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList
+}
+interface SpeechRecognitionInstance extends EventTarget {
+  lang: string
+  interimResults: boolean
+  maxAlternatives: number
+  onresult: ((event: SpeechRecognitionEvent) => void) | null
+  onerror: ((event: Event) => void) | null
+  onend: ((event: Event) => void) | null
+  start(): void
+}
+
 declare global {
   interface Window {
-    SpeechRecognition: typeof SpeechRecognition
-    webkitSpeechRecognition: typeof SpeechRecognition
+    SpeechRecognition: new () => SpeechRecognitionInstance
+    webkitSpeechRecognition: new () => SpeechRecognitionInstance
   }
+}
+
+function MicIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+      <line x1="12" y1="19" x2="12" y2="23" />
+      <line x1="8" y1="23" x2="16" y2="23" />
+    </svg>
+  )
 }
 
 export default function VoiceLoop({ guide, currentStepIndex, onResponse }: Props) {
@@ -67,21 +99,23 @@ export default function VoiceLoop({ guide, currentStepIndex, onResponse }: Props
     rec.start()
   }, [guide, onResponse])
 
-  const label = status === 'idle' ? 'Tap to Speak' : status === 'listening' ? 'Listening...' : 'Thinking...'
+  const isListening = status === 'listening'
+  const isThinking = status === 'thinking'
 
   return (
     <button
       onClick={startListening}
       disabled={status !== 'idle'}
-      className={`w-full py-5 rounded-2xl font-semibold text-lg transition-all select-none ${
-        status === 'idle'
-          ? 'bg-blue-600 hover:bg-blue-700 active:scale-95 text-white shadow-lg shadow-blue-900/30'
-          : status === 'listening'
-          ? 'bg-red-500 text-white animate-pulse cursor-default'
-          : 'bg-slate-700 text-slate-400 cursor-default'
-      }`}
+      className={[
+        'btn btn-lg btn-block',
+        isListening ? 'btn-primary pulse' : '',
+        isThinking ? 'btn-secondary' : '',
+        !isListening && !isThinking ? 'btn-primary' : '',
+      ].filter(Boolean).join(' ')}
+      style={{ gap: 10, cursor: status !== 'idle' ? 'default' : 'pointer' }}
     >
-      {label}
+      <MicIcon />
+      {status === 'idle' ? 'Tap to Speak' : status === 'listening' ? 'Listening…' : 'Thinking…'}
     </button>
   )
 }

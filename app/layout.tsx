@@ -1,8 +1,20 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import localFont from 'next/font/local'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
+const geistSans = localFont({
+  src: './fonts/GeistVF.woff',
+  variable: '--font-geist-sans',
+  weight: '100 900',
+  display: 'swap',
+})
+
+const geistMono = localFont({
+  src: './fonts/GeistMonoVF.woff',
+  variable: '--font-geist-mono',
+  weight: '100 900',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'Junior — Hands-Free Guide Assistant',
@@ -11,8 +23,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className={`${inter.className} bg-slate-950 text-slate-100 min-h-screen`}>
+    <html
+      lang="en"
+      className={`theme-dark accent-amber ${geistSans.variable} ${geistMono.variable}`}
+    >
+      <body style={{ fontFamily: 'var(--font-geist-sans, var(--font-sans))' }}>
         {children}
       </body>
     </html>

@@ -2,6 +2,14 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
+function ChevronRight({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  )
+}
+
 export default function RecentGuides() {
   const [guideIds, setGuideIds] = useState<string[]>([])
 
@@ -17,22 +25,20 @@ export default function RecentGuides() {
   if (guideIds.length === 0) return null
 
   return (
-    <div className="mt-10">
-      <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wider mb-3">
-        Your guides
-      </h2>
-      <ul className="space-y-2">
+    <div style={{ marginTop: 28 }}>
+      <div className="sec-title" style={{ padding: 0, marginBottom: 10 }}>
+        <h2>My Guides</h2>
+      </div>
+      <div className="col" style={{ gap: 6 }}>
         {guideIds.map(id => (
-          <li key={id}>
-            <Link
-              href={`/g/${id}`}
-              className="block px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm transition-colors border border-slate-700"
-            >
-              /g/{id}
-            </Link>
-          </li>
+          <Link key={id} href={`/g/${id}`} style={{ textDecoration: 'none' }}>
+            <div className="card card-pad row between" style={{ transition: 'background 0.12s' }}>
+              <span className="mono" style={{ fontSize: 13, color: 'var(--ink-2)' }}>/g/{id}</span>
+              <span style={{ color: 'var(--muted)' }}><ChevronRight /></span>
+            </div>
+          </Link>
         ))}
-      </ul>
+      </div>
     </div>
   )
 }

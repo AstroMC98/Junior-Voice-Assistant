@@ -16,24 +16,26 @@ export default function StepDisplay({
   onNext,
 }: Props) {
   return (
-    <div className="bg-slate-800 rounded-xl p-6 space-y-4">
-      <div className="text-slate-500 text-xs font-medium tracking-wide uppercase">
-        Step {stepIndex + 1} of {totalSteps}
-      </div>
-      <h2 className="text-xl font-semibold text-slate-100 leading-snug">{title}</h2>
-      <p className="text-slate-300 leading-relaxed">{content}</p>
-      <div className="flex gap-3 pt-1">
+    <div className="card card-pad col" style={{ gap: 12 }}>
+      <span className="tag stepnum mono">Step {stepIndex + 1} of {totalSteps}</span>
+      <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600, letterSpacing: '-0.01em', lineHeight: 1.3, color: 'var(--ink)' }}>
+        {title}
+      </h2>
+      <p style={{ margin: 0, color: 'var(--ink-2)', lineHeight: 1.65, fontSize: 15 }}>{content}</p>
+      <div className="row between" style={{ paddingTop: 4 }}>
         <button
           onClick={onPrev}
           disabled={stepIndex === 0}
-          className="flex-1 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 disabled:opacity-30 disabled:cursor-not-allowed text-slate-300 text-sm font-medium transition-colors"
+          className="btn btn-secondary"
+          style={{ flex: 1, opacity: stepIndex === 0 ? 0.3 : 1, cursor: stepIndex === 0 ? 'not-allowed' : 'pointer' }}
         >
           Previous
         </button>
         <button
           onClick={onNext}
           disabled={stepIndex >= totalSteps - 1}
-          className="flex-1 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 disabled:opacity-30 disabled:cursor-not-allowed text-slate-300 text-sm font-medium transition-colors"
+          className="btn btn-secondary"
+          style={{ flex: 1, opacity: stepIndex >= totalSteps - 1 ? 0.3 : 1, cursor: stepIndex >= totalSteps - 1 ? 'not-allowed' : 'pointer' }}
         >
           Next
         </button>

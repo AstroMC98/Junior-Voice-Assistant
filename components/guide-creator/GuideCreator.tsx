@@ -8,6 +8,12 @@ import type { Guide } from '@/lib/types'
 
 type Source = 'pdf' | 'url' | 'camera'
 
+const SOURCE_LABELS: Record<Source, string> = {
+  pdf: 'PDF',
+  url: 'URL',
+  camera: 'Camera',
+}
+
 export default function GuideCreator() {
   const [source, setSource] = useState<Source>('pdf')
   const [title, setTitle] = useState('')
@@ -43,32 +49,25 @@ export default function GuideCreator() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <label className="block text-sm font-medium text-slate-400 mb-1.5">Guide title</label>
+    <div className="col" style={{ gap: 16 }}>
+      <div className="field field-lg">
         <input
           type="text"
           value={title}
           onChange={e => setTitle(e.target.value)}
-          placeholder="e.g. KTANE Wires Module"
-          className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+          placeholder="Guide title — e.g. KTANE Wires Module"
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-slate-400 mb-1.5">Source</label>
-        <div className="flex gap-2">
+      <div className="row" style={{ gap: 8 }}>
+        <div className="seg">
           {(['pdf', 'url', 'camera'] as Source[]).map(s => (
             <button
               key={s}
               onClick={() => setSource(s)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                source === s
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-              }`}
+              className={source === s ? 'on' : ''}
             >
-              {s.toUpperCase()}
+              {SOURCE_LABELS[s]}
             </button>
           ))}
         </div>
@@ -79,29 +78,34 @@ export default function GuideCreator() {
       {source === 'camera' && <CameraCapture onCapture={image => createGuide({ images: [image] })} />}
 
       {status === 'processing' && (
-        <p className="text-blue-400 text-sm animate-pulse">
-          Processing guide with Claude — this takes 10-30 seconds...
-        </p>
+        <div className="row" style={{ gap: 8 }}>
+          <span className="tag tag-accent" style={{ animation: 'fadeInUp 0.3s ease' }}>Processing</span>
+          <span style={{ color: 'var(--muted)', fontSize: 13 }}>Claude is reading your guide — 10–30 seconds</span>
+        </div>
       )}
 
       {status === 'error' && (
-        <p className="text-red-400 text-sm">
-          Processing failed. Check your API keys in .env.local and try again.
-        </p>
+        <div className="row" style={{ gap: 8 }}>
+          <span className="tag tag-live">Error</span>
+          <span style={{ color: 'var(--muted)', fontSize: 13 }}>Processing failed. Check API keys in .env.local.</span>
+        </div>
       )}
 
       {status === 'done' && guideId && (
-        <div className="bg-slate-800 rounded-xl p-5 space-y-4">
-          <p className="text-green-400 font-medium">Guide ready!</p>
-          <div>
-            <p className="text-xs text-slate-500 mb-1">Share link</p>
-            <code className="text-blue-400 text-sm break-all">
+        <div className="card card-pad col" style={{ gap: 16 }}>
+          <div className="row" style={{ gap: 8 }}>
+            <span className="tag tag-accent">Ready</span>
+            <span style={{ color: 'var(--ink)', fontSize: 14, fontWeight: 600 }}>Guide created</span>
+          </div>
+          <div className="col" style={{ gap: 4 }}>
+            <span style={{ color: 'var(--muted)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-mono)' }}>Share link</span>
+            <code className="mono" style={{ fontSize: 13, color: 'var(--accent)', wordBreak: 'break-all' }}>
               {typeof window !== 'undefined' ? `${window.location.origin}/g/${guideId}` : `/g/${guideId}`}
             </code>
           </div>
           <button
             onClick={() => router.push(`/g/${guideId}`)}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2.5 font-medium transition-colors"
+            className="btn btn-primary btn-block btn-lg"
           >
             Start Session
           </button>

@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { getGuide } from '@/lib/kv'
+import AppShell from '@/components/layout/AppShell'
 import SessionView from '@/components/session/SessionView'
 
 export default async function GuidePage({ params }: { params: { id: string } }) {
@@ -7,8 +8,8 @@ export default async function GuidePage({ params }: { params: { id: string } }) 
   if (!guide) notFound()
 
   return (
-    <main className="max-w-xl mx-auto px-4 py-8">
+    <AppShell title={guide.title} backHref="/" fillHeight>
       <SessionView guide={guide} />
-    </main>
+    </AppShell>
   )
 }
