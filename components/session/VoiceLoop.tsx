@@ -62,7 +62,7 @@ export default function VoiceLoop({ guide, currentStepIndex, onResponse }: Props
     }
 
     rec.onerror = () => setStatus('idle')
-    rec.onend = () => setStatus('idle')
+    rec.onend = () => setStatus(prev => prev === 'listening' ? 'idle' : prev)
 
     rec.start()
   }, [guide, onResponse])
