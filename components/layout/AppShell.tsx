@@ -2,6 +2,8 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
+import { useApiKey } from '@/lib/ApiKeyContext'
+import ApiKeyModal from '@/components/ApiKeyModal'
 
 interface Props {
   title: string
@@ -46,6 +48,15 @@ function ChevronLeft({ size = 18 }: { size?: number }) {
   )
 }
 
+function KeyIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  )
+}
+
 const NAV_ITEMS = [
   { label: 'Discover', href: '/', icon: HomeIcon },
   { label: 'My Guides', href: '/', icon: BookIcon },
@@ -53,9 +64,24 @@ const NAV_ITEMS = [
 
 export default function AppShell({ title, backHref, rightSlot, fillHeight, children }: Props) {
   const pathname = usePathname()
+  const { apiKey, openModal } = useApiKey()
+
+  const keyButton = (
+    <button
+      onClick={openModal}
+      className="btn btn-ghost btn-sm"
+      style={{ gap: 6, color: apiKey ? 'var(--accent)' : 'var(--muted)' }}
+      title={apiKey ? 'API key set' : 'Set API key'}
+    >
+      <KeyIcon size={15} />
+      {apiKey ? 'Key set' : 'Add key'}
+    </button>
+  )
 
   return (
     <>
+      <ApiKeyModal />
+
       {/* ── Mobile shell ─────────────────────────────────────── */}
       <div className="shell-mobile app">
         <header className="app-header">
@@ -73,7 +99,10 @@ export default function AppShell({ title, backHref, rightSlot, fillHeight, child
               <p className="h-sub">Load a guide. Speak freely. Keep your hands free.</p>
             )}
           </div>
-          {rightSlot && <div className="row" style={{ flexShrink: 0 }}>{rightSlot}</div>}
+          <div className="row" style={{ flexShrink: 0, gap: 8 }}>
+            {rightSlot}
+            {keyButton}
+          </div>
         </header>
 
         <div className="app-scroll">
@@ -121,12 +150,8 @@ export default function AppShell({ title, backHref, rightSlot, fillHeight, child
 
           <div style={{ flex: 1 }} />
 
-          <div className="row" style={{ padding: '12px 10px', borderTop: '1px solid var(--border)' }}>
-            <div className="avatar" style={{ background: 'var(--accent)', color: '#0E0C09' }}>J</div>
-            <div className="col" style={{ gap: 1 }}>
-              <span style={{ fontSize: 13, fontWeight: 600 }}>You</span>
-              <span style={{ fontSize: 11, color: 'var(--muted)' }}>Local session</span>
-            </div>
+          <div style={{ padding: '12px 10px', borderTop: '1px solid var(--border)' }}>
+            {keyButton}
           </div>
         </aside>
 
