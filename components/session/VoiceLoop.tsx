@@ -2,6 +2,8 @@
 import { useState, useCallback, useRef } from 'react'
 import type { Guide, SessionResponse } from '@/lib/types'
 import { API_BASE } from '@/lib/types'
+import { useApiKey } from '@/lib/ApiKeyContext'
+import { apiFetch, ApiKeyError } from '@/lib/apiFetch'
 
 interface Props {
   guide: Guide
@@ -52,11 +54,16 @@ export default function VoiceLoop({ guide, currentStepIndex, onResponse }: Props
   const [status, setStatus] = useState<'idle' | 'listening' | 'thinking'>('idle')
   const currentStepRef = useRef(currentStepIndex)
   currentStepRef.current = currentStepIndex
+  const { apiKey, openModal } = useApiKey()
 
   const startListening = useCallback(() => {
     const SR = window.SpeechRecognition ?? window.webkitSpeechRecognition
     if (!SR) {
       alert('Speech recognition is not available in this browser. Use Chrome or Edge.')
+      return
+    }
+    if (!apiKey) {
+      openModal()
       return
     }
 
@@ -71,7 +78,7 @@ export default function VoiceLoop({ guide, currentStepIndex, onResponse }: Props
       setStatus('thinking')
 
       try {
-        const res = await fetch(`${API_BASE}/api/session`, {
+        const res = await apiFetch(`${API_BASE}/api/session`, apiKey, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -89,7 +96,8 @@ export default function VoiceLoop({ guide, currentStepIndex, onResponse }: Props
         speechSynthesis.speak(utt)
 
         onResponse(response)
-      } catch {
+      } catch (err) {
+        if (err instanceof ApiKeyError) openModal()
         setStatus('idle')
       }
     }
@@ -98,7 +106,7 @@ export default function VoiceLoop({ guide, currentStepIndex, onResponse }: Props
     rec.onend = () => setStatus(prev => prev === 'listening' ? 'idle' : prev)
 
     rec.start()
-  }, [guide, onResponse])
+  }, [guide, onResponse, apiKey, openModal])
 
   const isListening = status === 'listening'
   const isThinking = status === 'thinking'
