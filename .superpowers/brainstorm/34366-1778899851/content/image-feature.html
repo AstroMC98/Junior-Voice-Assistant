@@ -1,0 +1,72 @@
+<h2>Image Display — Two Design Directions</h2>
+<p class="subtitle">How does the user see and annotate guide images during a session?</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Creator Annotates, User Views</h3>
+      <p>The guide creator (you) crops and highlights regions when building the guide. During sessions, the annotated image is shown automatically at the right step — the user just sees what you decided to highlight.</p>
+      <div class="mockup" style="margin-top:0.75rem">
+        <div class="mockup-header">Guide Editor — Step 3 "Knead the dough"</div>
+        <div class="mockup-body" style="display:flex;gap:0.75rem;align-items:flex-start">
+          <div style="flex:1;background:#1e293b;border-radius:6px;padding:0.5rem;font-size:0.75rem;color:#94a3b8">
+            <div style="background:#0f172a;border-radius:4px;height:90px;display:flex;align-items:center;justify-content:center;position:relative;margin-bottom:0.5rem;overflow:hidden">
+              <span style="color:#475569">[ recipe photo ]</span>
+              <div style="position:absolute;border:2px solid #f59e0b;border-radius:3px;top:20px;left:30px;width:60px;height:40px;background:rgba(245,158,11,0.1)"></div>
+            </div>
+            <div style="color:#fbbf24;font-size:0.7rem">✏ Drag to crop · Click to annotate</div>
+          </div>
+          <div style="flex:1;font-size:0.75rem;color:#94a3b8">
+            <strong style="color:#e2e8f0">During session:</strong><br>
+            Step card + highlighted image shows automatically. User hears Junior say <em>"it should look like this — see the highlighted area."</em>
+          </div>
+        </div>
+      </div>
+      <div class="pros-cons" style="margin-top:0.75rem">
+        <div class="pros"><h4>Pros</h4><ul><li>Curated experience — creator controls the clarity</li><li>Simpler session UI (no user interaction needed)</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>More work for guide creator</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>User Crops On Demand</h3>
+      <p>All guide images are available during a session. When Junior references a diagram or photo, it appears. The user can tap and drag to crop/zoom into the part they need — no pre-annotation required.</p>
+      <div class="mockup" style="margin-top:0.75rem">
+        <div class="mockup-header">Session UI — Step 3 "Knead the dough"</div>
+        <div class="mockup-body" style="display:flex;gap:0.75rem;align-items:flex-start">
+          <div style="flex:1;background:#1e293b;border-radius:6px;padding:0.5rem;font-size:0.75rem;color:#94a3b8">
+            <div style="background:#0f172a;border-radius:4px;height:90px;display:flex;align-items:center;justify-content:center;margin-bottom:0.5rem">
+              <span style="color:#475569">[ recipe photo ]</span>
+            </div>
+            <div style="color:#60a5fa;font-size:0.7rem">📌 Pinch to zoom · drag to crop</div>
+          </div>
+          <div style="flex:1;font-size:0.75rem;color:#94a3b8">
+            <strong style="color:#e2e8f0">During session:</strong><br>
+            Image pops up when relevant. User can zoom into any part. No setup needed by creator.
+          </div>
+        </div>
+      </div>
+      <div class="pros-cons" style="margin-top:0.75rem">
+        <div class="pros"><h4>Pros</h4><ul><li>Zero friction for guide creators</li><li>User has full control mid-session</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Harder to surface the right image at the right moment</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Both — Creator Annotates + User Can Adjust</h3>
+      <p>Creator pre-annotates the highlight, but the user can still pinch/zoom or drag the crop region during the session if they need a different angle. Best of both worlds.</p>
+      <div class="pros-cons" style="margin-top:0.75rem">
+        <div class="pros"><h4>Pros</h4><ul><li>Guided but flexible</li><li>Works for both detailed manuals and quick recipes</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Most to build in 24 hours</li></ul></div>
+      </div>
+      <p class="label">⭐ Best long-term, but scope risk for 24h build</p>
+    </div>
+  </div>
+</div>

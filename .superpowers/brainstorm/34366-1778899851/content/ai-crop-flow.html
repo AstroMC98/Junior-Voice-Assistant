@@ -1,0 +1,73 @@
+<h2>AI-Driven Image Cropping — How It Works</h2>
+<p class="subtitle">Junior analyzes guide images automatically — no manual annotation needed</p>
+
+<div style="margin-top:1rem">
+
+  <!-- Flow -->
+  <div style="display:flex;flex-direction:column;gap:0.75rem">
+
+    <div style="display:flex;gap:1rem;align-items:stretch">
+      <div style="width:28px;display:flex;flex-direction:column;align-items:center;flex-shrink:0">
+        <div style="width:28px;height:28px;border-radius:50%;background:#3b82f6;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:bold;color:#fff">1</div>
+        <div style="width:2px;flex:1;background:#334155;margin-top:4px"></div>
+      </div>
+      <div style="flex:1;background:#1e293b;border-radius:8px;padding:0.75rem;font-size:0.84rem;color:#cbd5e1;margin-bottom:0.25rem">
+        <strong style="color:#e2e8f0">Guide Uploaded or Fetched</strong><br>
+        PDF pages rendered as images. Photos kept as-is. All images stored in <span style="color:#60a5fa">Vercel Blob</span> with their page/position metadata.
+      </div>
+    </div>
+
+    <div style="display:flex;gap:1rem;align-items:stretch">
+      <div style="width:28px;display:flex;flex-direction:column;align-items:center;flex-shrink:0">
+        <div style="width:28px;height:28px;border-radius:50%;background:#3b82f6;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:bold;color:#fff">2</div>
+        <div style="width:2px;flex:1;background:#334155;margin-top:4px"></div>
+      </div>
+      <div style="flex:1;background:#1e293b;border-radius:8px;padding:0.75rem;font-size:0.84rem;color:#cbd5e1;margin-bottom:0.25rem">
+        <strong style="color:#e2e8f0">Claude Vision Analyses Each Image</strong><br>
+        For each step, Claude receives: the step text + the associated image(s). It returns a <span style="color:#34d399">bounding box</span> — the region most relevant to that step.<br>
+        <div style="margin-top:0.5rem;background:#0f172a;border-radius:4px;padding:0.5rem;font-family:monospace;font-size:0.75rem;color:#94a3b8">
+          "For step 3 (knead the dough), highlight: <span style="color:#fbbf24">{ x: 120, y: 45, w: 210, h: 160 }</span>"
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:1rem;align-items:stretch">
+      <div style="width:28px;display:flex;flex-direction:column;align-items:center;flex-shrink:0">
+        <div style="width:28px;height:28px;border-radius:50%;background:#3b82f6;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:bold;color:#fff">3</div>
+        <div style="width:2px;flex:1;background:#334155;margin-top:4px"></div>
+      </div>
+      <div style="flex:1;background:#1e293b;border-radius:8px;padding:0.75rem;font-size:0.84rem;color:#cbd5e1;margin-bottom:0.25rem">
+        <strong style="color:#e2e8f0">Bounding Boxes Saved with Each Step</strong><br>
+        Each guide step stores: text · associated image URL · AI crop coordinates. This happens once at guide creation — not at session time.
+      </div>
+    </div>
+
+    <div style="display:flex;gap:1rem;align-items:stretch">
+      <div style="width:28px;display:flex;flex-direction:column;align-items:center;flex-shrink:0">
+        <div style="width:28px;height:28px;border-radius:50%;background:#10b981;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:bold;color:#fff">4</div>
+      </div>
+      <div style="flex:1;background:#1e293b;border:1px solid #134e4a;border-radius:8px;padding:0.75rem;font-size:0.84rem;color:#cbd5e1">
+        <strong style="color:#6ee7b7">During Session — Step Changes</strong><br>
+        When user advances to a step that has an image, the UI renders the image with a <span style="color:#fbbf24">highlight overlay</span> over the AI-selected crop region. Junior can also say <em>"take a look at the highlighted part."</em>
+        <div style="margin-top:0.75rem;display:flex;gap:0.75rem">
+          <div style="flex:1;background:#0f172a;border-radius:6px;padding:0.5rem">
+            <div style="height:70px;position:relative;background:#1e293b;border-radius:4px;display:flex;align-items:center;justify-content:center;overflow:hidden">
+              <span style="color:#475569;font-size:0.7rem">[ guide image ]</span>
+              <div style="position:absolute;border:2px solid #f59e0b;border-radius:3px;top:15px;left:25px;width:55px;height:35px;background:rgba(245,158,11,0.15)"></div>
+            </div>
+            <div style="font-size:0.7rem;color:#94a3b8;margin-top:0.4rem;text-align:center">AI crop overlay</div>
+          </div>
+          <div style="flex:1;background:#0f172a;border-radius:6px;padding:0.5rem;font-size:0.75rem;color:#94a3b8;display:flex;align-items:center">
+            User can still pinch/zoom freely — the highlight is a guide, not a lock
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="margin-top:1rem;background:#0f172a;border:1px solid #334155;border-radius:8px;padding:0.75rem;font-size:0.8rem;color:#64748b">
+    <strong style="color:#94a3b8">What this adds to the stack:</strong>
+    &nbsp;Vercel Blob (image storage) · PDF-to-image rendering (pdf.js or Puppeteer) · one extra Claude vision call per step at guide creation time
+  </div>
+</div>

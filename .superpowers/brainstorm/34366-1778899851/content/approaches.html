@@ -1,0 +1,68 @@
+<h2>Three Ways to Build Junior</h2>
+<p class="subtitle">Pick the approach that fits your 24-hour window and portfolio goals</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Lean Web App — Next.js + Claude API</h3>
+      <p><strong>Stack:</strong> Next.js · Claude claude-sonnet-4-6 (vision) · Web Speech API · Vercel</p>
+      <p>One API key does everything: reads your uploaded PDF, extracts recipe steps, answers questions, and checks your camera photo. Web Speech API handles voice in-browser — no extra service needed.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Single API provider — simplest setup</li>
+          <li>Claude vision handles OCR + progress checking natively</li>
+          <li>Vercel deploy in under 5 minutes</li>
+          <li>Strong portfolio story: "AI-native from day one"</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Web Speech API quality varies by browser</li>
+          <li>No persistent sessions across devices</li>
+        </ul></div>
+      </div>
+      <p class="label">⭐ Recommended for 24-hour build</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Mobile-First PWA — React + Whisper + GPT-4o</h3>
+      <p><strong>Stack:</strong> React PWA · OpenAI Whisper (voice) · GPT-4o (vision) · Vercel</p>
+      <p>Progressive Web App optimized for mobile. Whisper gives high-accuracy voice recognition; GPT-4o handles vision. Feels native on your phone.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Best voice accuracy (Whisper)</li>
+          <li>Native-feel mobile camera UX</li>
+          <li>GPT-4o is strong for multimodal tasks</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Two API providers adds complexity</li>
+          <li>Whisper adds round-trip latency</li>
+          <li>More setup overhead in a 24-hour window</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Rapid Prototype — Streamlit + Claude API</h3>
+      <p><strong>Stack:</strong> Python · Streamlit · Claude claude-sonnet-4-6 · Hugging Face Spaces</p>
+      <p>Python-first approach using Streamlit for UI. Fast to scaffold, easy to iterate. Better for data scientists than a polished consumer app.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Fastest to get running</li>
+          <li>Easy state management in Python</li>
+          <li>Free Hugging Face deployment</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Voice is second-class in Streamlit</li>
+          <li>Desktop-only feel — doesn't match the hands-free use case</li>
+          <li>Less polished as a portfolio piece</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+</div>

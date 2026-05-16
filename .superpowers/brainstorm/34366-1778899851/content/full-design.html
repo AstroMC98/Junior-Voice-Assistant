@@ -1,0 +1,84 @@
+<h2>Junior — Full Design</h2>
+<p class="subtitle">Hands-free AI guide assistant · Next.js · Claude claude-sonnet-4-6 · Vercel</p>
+
+<div class="section">
+  <h3>Core Features</h3>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+    <div style="background:#1e293b;border-radius:8px;padding:0.75rem;font-size:0.82rem;color:#cbd5e1">
+      <div style="color:#60a5fa;font-weight:600;margin-bottom:0.3rem">📄 Guide Creation</div>
+      Upload PDF · fetch from URL · photograph physical doc (camera OCR). Claude extracts structured steps + attaches images with AI-generated crop bounding boxes.
+    </div>
+    <div style="background:#1e293b;border-radius:8px;padding:0.75rem;font-size:0.82rem;color:#cbd5e1">
+      <div style="color:#60a5fa;font-weight:600;margin-bottom:0.3rem">🎙 Voice Session</div>
+      Web Speech API input · Claude answers with full guide + current step context · Speech Synthesis output. Says "next"/"done" to advance, or asks anything freely.
+    </div>
+    <div style="background:#1e293b;border-radius:8px;padding:0.75rem;font-size:0.82rem;color:#cbd5e1">
+      <div style="color:#60a5fa;font-weight:600;margin-bottom:0.3rem">🖼 Smart Image Display</div>
+      Images surface automatically on step advance <em>or</em> on voice request ("What do I expect to see?"). AI crop overlay highlights the relevant region. User can still pinch/zoom freely.
+    </div>
+    <div style="background:#1e293b;border-radius:8px;padding:0.75rem;font-size:0.82rem;color:#cbd5e1">
+      <div style="color:#60a5fa;font-weight:600;margin-bottom:0.3rem">📷 Progress Check</div>
+      User takes a photo mid-task. Claude compares it to the current step and AI crop — gives go/no-go feedback ("your dough looks right, keep going").
+    </div>
+    <div style="background:#1e293b;border-radius:8px;padding:0.75rem;font-size:0.82rem;color:#cbd5e1">
+      <div style="color:#34d399;font-weight:600;margin-bottom:0.3rem">🔗 Shareable + Forkable</div>
+      Every guide gets a public slug (/g/abc123). Anyone with the link can run a session. Fork = saves a new copy under a new ID for customisation.
+    </div>
+    <div style="background:#1e293b;border-radius:8px;padding:0.75rem;font-size:0.82rem;color:#cbd5e1">
+      <div style="color:#34d399;font-weight:600;margin-bottom:0.3rem">🍳 Cooking-First, General-Ready</div>
+      Demo showcases a baking recipe. Architecture supports any domain — manuals, assembly guides, KTANE rulebook.
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Data Model</h3>
+  <div style="background:#0f172a;border-radius:8px;padding:0.75rem;font-family:monospace;font-size:0.78rem;color:#94a3b8;line-height:1.7">
+    <span style="color:#60a5fa">Guide</span> {<br>
+    &nbsp;&nbsp;id: <span style="color:#fbbf24">nanoid</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#475569">// public URL slug</span><br>
+    &nbsp;&nbsp;title: string<br>
+    &nbsp;&nbsp;source: <span style="color:#fbbf24">'pdf' | 'url' | 'camera'</span><br>
+    &nbsp;&nbsp;steps: <span style="color:#60a5fa">Step[]</span><br>
+    &nbsp;&nbsp;fork_of?: string&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#475569">// parent guide id</span><br>
+    &nbsp;&nbsp;created_at: timestamp<br>
+    }<br><br>
+    <span style="color:#60a5fa">Step</span> {<br>
+    &nbsp;&nbsp;index: number<br>
+    &nbsp;&nbsp;title: string<br>
+    &nbsp;&nbsp;content: string<br>
+    &nbsp;&nbsp;image_url?: string&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#475569">// Vercel Blob URL</span><br>
+    &nbsp;&nbsp;crop?: <span style="color:#fbbf24">{ x, y, w, h }</span>&nbsp;&nbsp;&nbsp;<span style="color:#475569">// AI bounding box (% of image)</span><br>
+    }
+  </div>
+</div>
+
+<div class="section">
+  <h3>AI Design — Session Turn</h3>
+  <div style="background:#0f172a;border-radius:8px;padding:0.75rem;font-size:0.8rem;color:#94a3b8;line-height:1.7">
+    <span style="color:#60a5fa">System prompt:</span> You are Junior, a hands-free guide assistant.<br>
+    Guide: [full guide text]. Current step: [N of M] — [step content].<br>
+    Speak naturally and briefly. When the user advances, confirm the new step aloud.<br>
+    If the user asks to see something visually, reply with JSON action alongside your spoken response:<br>
+    <span style="color:#fbbf24">{ "action": "show_image", "step": N }</span><br>
+    On camera photo: assess whether it matches the current step. Give go/no-go feedback.<br><br>
+    <span style="color:#60a5fa">Response format:</span><br>
+    <span style="color:#fbbf24">{ "speech": "...", "action": "show_image" | "advance" | null, "step": N }</span>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Stack & Deployment</h3>
+  <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
+    <div style="background:#1e293b;border-radius:8px;padding:0.6rem 0.9rem;font-size:0.8rem;color:#93c5fd">Next.js 14 (App Router)</div>
+    <div style="background:#1e293b;border-radius:8px;padding:0.6rem 0.9rem;font-size:0.8rem;color:#93c5fd">Claude claude-sonnet-4-6 (vision)</div>
+    <div style="background:#1e293b;border-radius:8px;padding:0.6rem 0.9rem;font-size:0.8rem;color:#93c5fd">Vercel KV (guide storage)</div>
+    <div style="background:#1e293b;border-radius:8px;padding:0.6rem 0.9rem;font-size:0.8rem;color:#93c5fd">Vercel Blob (image storage)</div>
+    <div style="background:#1e293b;border-radius:8px;padding:0.6rem 0.9rem;font-size:0.8rem;color:#86efac">Web Speech API (voice in/out)</div>
+    <div style="background:#1e293b;border-radius:8px;padding:0.6rem 0.9rem;font-size:0.8rem;color:#86efac">pdf.js (PDF rendering)</div>
+    <div style="background:#1e293b;border-radius:8px;padding:0.6rem 0.9rem;font-size:0.8rem;color:#c4b5fd">Vercel (deploy)</div>
+  </div>
+</div>
+
+<div style="margin-top:1rem;background:#0f172a;border:1px solid #1e3a5f;border-radius:8px;padding:0.75rem;font-size:0.8rem;color:#64748b">
+  <strong style="color:#94a3b8">No auth required.</strong> Guides identified by ID. Forks stored in localStorage until explicitly saved. Sessions are stateless — no server-side session tracking needed.
+</div>

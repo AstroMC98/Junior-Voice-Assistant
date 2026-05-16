@@ -1,0 +1,70 @@
+<h2>Junior — Architecture Overview</h2>
+<p class="subtitle">Next.js · Claude claude-sonnet-4-6 (vision) · Vercel KV · Web Speech API</p>
+
+<div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-top:1rem">
+
+  <!-- Column 1: Input -->
+  <div style="flex:1;min-width:180px">
+    <p class="label">1 · Guide Creation</p>
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:1rem;font-size:0.85rem;color:#cbd5e1">
+      <div style="margin-bottom:0.5rem;padding:0.4rem 0.6rem;background:#0f172a;border-radius:4px">📄 Upload PDF</div>
+      <div style="margin-bottom:0.5rem;padding:0.4rem 0.6rem;background:#0f172a;border-radius:4px">🌐 Fetch from URL</div>
+      <div style="padding:0.4rem 0.6rem;background:#0f172a;border-radius:4px">📷 Camera (physical doc)</div>
+      <div style="margin-top:1rem;border-top:1px solid #334155;padding-top:0.75rem;color:#94a3b8;font-size:0.75rem">
+        ↓ Claude extracts &amp; structures steps
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow -->
+  <div style="display:flex;align-items:center;color:#475569;font-size:1.5rem">→</div>
+
+  <!-- Column 2: Storage -->
+  <div style="flex:1;min-width:180px">
+    <p class="label">2 · Guide Store</p>
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:1rem;font-size:0.85rem;color:#cbd5e1">
+      <div style="margin-bottom:0.5rem;padding:0.4rem 0.6rem;background:#0f172a;border-radius:4px">🗃 Vercel KV (Redis)</div>
+      <div style="color:#94a3b8;font-size:0.75rem;margin-top:0.5rem">Each guide has a nanoid URL slug</div>
+      <div style="margin-top:0.75rem;border-top:1px solid #334155;padding-top:0.75rem">
+        <div style="font-size:0.75rem;color:#60a5fa">Share link: /g/[id]</div>
+        <div style="font-size:0.75rem;color:#34d399;margin-top:0.3rem">Fork → saved as new guide</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow -->
+  <div style="display:flex;align-items:center;color:#475569;font-size:1.5rem">→</div>
+
+  <!-- Column 3: Session -->
+  <div style="flex:1;min-width:180px">
+    <p class="label">3 · Live Session</p>
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:1rem;font-size:0.85rem;color:#cbd5e1">
+      <div style="margin-bottom:0.5rem;padding:0.4rem 0.6rem;background:#0f172a;border-radius:4px">🎙 Voice in (Web Speech API)</div>
+      <div style="margin-bottom:0.5rem;padding:0.4rem 0.6rem;background:#0f172a;border-radius:4px">🤖 Claude (guide context + step)</div>
+      <div style="margin-bottom:0.5rem;padding:0.4rem 0.6rem;background:#0f172a;border-radius:4px">🔊 Voice out (Speech Synthesis)</div>
+      <div style="padding:0.4rem 0.6rem;background:#0f172a;border-radius:4px">📷 Camera → progress check</div>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:1.5rem;background:#1e293b;border:1px solid #334155;border-radius:8px;padding:1rem">
+  <p class="label">AI Design — What Claude sees in every session turn</p>
+  <div style="font-family:monospace;font-size:0.8rem;color:#94a3b8;line-height:1.6">
+    <span style="color:#60a5fa">System:</span> You are Junior, a hands-free guide assistant. Guide: [full guide text]. Current step: [N of M] — [step content].<br>
+    Answer questions from the guide context. Advance step on "next"/"done". On camera photo, assess progress against current step.<br>
+    <span style="color:#60a5fa">User:</span> [voice transcript] + optional [image]
+  </div>
+</div>
+
+<div style="margin-top:1rem;display:flex;gap:1rem;flex-wrap:wrap">
+  <div style="flex:1;min-width:160px;background:#0f172a;border:1px solid #1e3a5f;border-radius:8px;padding:0.75rem;font-size:0.8rem;color:#93c5fd">
+    <strong>Deployment</strong><br>Vercel (Next.js) · &lt; 5 min
+  </div>
+  <div style="flex:1;min-width:160px;background:#0f172a;border:1px solid #14532d;border-radius:8px;padding:0.75rem;font-size:0.8rem;color:#86efac">
+    <strong>Only 1 API key</strong><br>Claude handles everything
+  </div>
+  <div style="flex:1;min-width:160px;background:#0f172a;border:1px solid #4c1d95;border-radius:8px;padding:0.75rem;font-size:0.8rem;color:#c4b5fd">
+    <strong>No auth needed</strong><br>Guides stored by ID · forks by browser
+  </div>
+</div>
