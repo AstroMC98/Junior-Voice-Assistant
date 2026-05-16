@@ -1,24 +1,15 @@
-import os
 from anthropic import Anthropic
 from api.models import Guide, Step, SessionResponse
 from api.utils import extract_json
-
-_client: Anthropic | None = None
-
-
-def _get_client() -> Anthropic:
-    global _client
-    if _client is None:
-        _client = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-    return _client
 
 
 async def process_guide(
     source: str,
     text: str | None,
     images: list[str] | None,
+    api_key: str,
 ) -> list[Step]:
-    client = _get_client()
+    client = Anthropic(api_key=api_key)
     user_content: list[dict] = []
 
     if images:
@@ -63,8 +54,9 @@ async def session_turn(
     current_step_index: int,
     transcript: str,
     photo: str | None,
+    api_key: str,
 ) -> SessionResponse:
-    client = _get_client()
+    client = Anthropic(api_key=api_key)
     step = guide.steps[current_step_index]
     user_content: list[dict] = []
 
