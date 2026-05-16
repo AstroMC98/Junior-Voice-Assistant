@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import localFont from 'next/font/local'
+import { ApiKeyProvider } from '@/lib/ApiKeyContext'
 import './globals.css'
 
 const geistSans = localFont({
@@ -28,7 +29,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`theme-dark accent-amber ${geistSans.variable} ${geistMono.variable}`}
     >
       <body style={{ fontFamily: 'var(--font-geist-sans, var(--font-sans))' }}>
-        {children}
+        <ApiKeyProvider>
+          {children}
+        </ApiKeyProvider>
       </body>
     </html>
   )
