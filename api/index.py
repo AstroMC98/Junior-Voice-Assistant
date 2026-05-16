@@ -6,7 +6,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import httpx
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
 
@@ -50,8 +50,16 @@ _BLOCKED_HOST_RE = re.compile(
 )
 
 
+def require_api_key(request: Request) -> str:
+    # NEVER log this value — it is a user-supplied secret used only for the duration of this request
+    key = request.headers.get("X-Api-Key", "").strip()
+    if not key:
+        raise HTTPException(status_code=401, detail="API key required")
+    return key
+
+
 @app.post("/api/guides", response_model=Guide, status_code=201)
-async def create_guide(body: CreateGuideRequest):
+async def create_guide(body: CreateGuideRequest, api_key: str = Depends(require_api_key)):
     if not body.title.strip():
         raise HTTPException(status_code=400, detail="title is required")
 
@@ -67,6 +75,7 @@ async def create_guide(body: CreateGuideRequest):
             source=body.source,
             text=body.text,
             images=body.images,
+            api_key=api_key,
         )
 
         steps: list[Step] = []
@@ -119,7 +128,7 @@ async def fork_guide(guide_id: str):
 
 
 @app.post("/api/session", response_model=SessionResponse)
-async def session_endpoint(body: SessionTurnRequest):
+async def session_endpoint(body: SessionTurnRequest, api_key: str = Depends(require_api_key)):
     if not body.guide.steps:
         raise HTTPException(status_code=400, detail="Missing required fields")
     if body.currentStepIndex < 0 or body.currentStepIndex >= len(body.guide.steps):
@@ -130,6 +139,7 @@ async def session_endpoint(body: SessionTurnRequest):
         current_step_index=body.currentStepIndex,
         transcript=body.transcript,
         photo=body.photo,
+        api_key=api_key,
     )
 
 
