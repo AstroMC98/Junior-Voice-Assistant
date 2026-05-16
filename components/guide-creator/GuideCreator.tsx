@@ -5,6 +5,7 @@ import PdfUploader from './PdfUploader'
 import UrlFetcher from './UrlFetcher'
 import CameraCapture from './CameraCapture'
 import type { Guide } from '@/lib/types'
+import { API_BASE } from '@/lib/types'
 
 type Source = 'pdf' | 'url' | 'camera'
 
@@ -28,7 +29,7 @@ export default function GuideCreator() {
     }
     setStatus('processing')
     try {
-      const res = await fetch('/api/guides', {
+      const res = await fetch(`${API_BASE}/api/guides`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ source, title: title.trim(), ...payload }),

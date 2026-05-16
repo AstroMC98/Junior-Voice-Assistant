@@ -26,3 +26,5 @@ export type SessionResponse = {
   action: 'show_image' | 'advance' | null
   step: number | null
 }
+
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? ''

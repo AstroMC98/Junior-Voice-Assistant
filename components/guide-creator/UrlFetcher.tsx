@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { API_BASE } from '@/lib/types'
 
 interface Props {
   onFetch: (text: string) => void
@@ -13,7 +14,7 @@ export default function UrlFetcher({ onFetch }: Props) {
     if (!url.trim()) return
     setStatus('fetching')
     try {
-      const res = await fetch(`/api/fetch-url?url=${encodeURIComponent(url.trim())}`)
+      const res = await fetch(`${API_BASE}/api/fetch-url?url=${encodeURIComponent(url.trim())}`)
       if (!res.ok) throw new Error()
       const { text } = await res.json()
       setStatus('idle')

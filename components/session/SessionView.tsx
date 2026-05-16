@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Guide, SessionResponse } from '@/lib/types'
+import { API_BASE } from '@/lib/types'
 import StepDisplay from './StepDisplay'
 import ImageViewer from './ImageViewer'
 import VoiceLoop from './VoiceLoop'
@@ -49,7 +50,7 @@ export default function SessionView({ guide }: Props) {
   }
 
   async function fork() {
-    const res = await fetch(`/api/guides/${guide.id}`, { method: 'POST' })
+    const res = await fetch(`${API_BASE}/api/guides/${guide.id}`, { method: 'POST' })
     if (!res.ok) return alert('Fork failed')
     const forked: Guide = await res.json()
     const stored = JSON.parse(localStorage.getItem('junior_guides') ?? '[]') as string[]
