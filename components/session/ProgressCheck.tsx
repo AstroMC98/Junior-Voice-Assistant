@@ -2,6 +2,8 @@
 import { useState } from 'react'
 import type { Guide, SessionResponse } from '@/lib/types'
 import { API_BASE } from '@/lib/types'
+import { useApiKey } from '@/lib/ApiKeyContext'
+import { apiFetch, ApiKeyError } from '@/lib/apiFetch'
 
 interface Props {
   guide: Guide
@@ -21,8 +23,13 @@ function CameraIcon() {
 export default function ProgressCheck({ guide, currentStepIndex, onResult }: Props) {
   const [status, setStatus] = useState<'idle' | 'capturing' | 'checking'>('idle')
   const [error, setError] = useState<string | null>(null)
+  const { apiKey, openModal } = useApiKey()
 
   async function check() {
+    if (!apiKey) {
+      openModal()
+      return
+    }
     setError(null)
     setStatus('capturing')
 
@@ -57,7 +64,7 @@ export default function ProgressCheck({ guide, currentStepIndex, onResult }: Pro
 
     setStatus('checking')
     try {
-      const res = await fetch(`${API_BASE}/api/session`, {
+      const res = await apiFetch(`${API_BASE}/api/session`, apiKey, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -75,8 +82,12 @@ export default function ProgressCheck({ guide, currentStepIndex, onResult }: Pro
       speechSynthesis.speak(utt)
 
       onResult(result)
-    } catch {
-      setError('Check failed. Try again.')
+    } catch (err) {
+      if (err instanceof ApiKeyError) {
+        openModal()
+      } else {
+        setError('Check failed. Try again.')
+      }
     } finally {
       setStatus('idle')
     }
