@@ -10,6 +10,11 @@ const config: Config = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
   },
+  extensionsToTreatAsEsm: ['.ts'],
+  transform: {
+    '^.+\\.tsx?$': ['ts-jest', { useESM: true }],
+  },
+  transformIgnorePatterns: ['node_modules/(?!(nanoid)/)'],
 }
 
 export default createJestConfig(config)
