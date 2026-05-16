@@ -99,5 +99,9 @@ Rules:
   })
 
   const text = response.content[0].type === 'text' ? response.content[0].text : '{}'
-  return extractJSON<SessionResponse>(text)
+  try {
+    return extractJSON<SessionResponse>(text)
+  } catch {
+    return { speech: "Sorry, I had trouble with that. Please try again.", action: null, step: null }
+  }
 }

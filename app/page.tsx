@@ -1,4 +1,5 @@
 import GuideCreator from '@/components/guide-creator/GuideCreator'
+import RecentGuides from '@/components/guide-creator/RecentGuides'
 
 export default function Home() {
   return (
@@ -10,6 +11,7 @@ export default function Home() {
         </p>
       </div>
       <GuideCreator />
+      <RecentGuides />
     </main>
   )
 }

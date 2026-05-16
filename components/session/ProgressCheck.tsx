@@ -17,26 +17,32 @@ export default function ProgressCheck({ guide, currentStepIndex, onResult }: Pro
     setStatus('capturing')
 
     let photo: string
+    let stream: MediaStream | null = null
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
+      stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment' },
       })
       const video = document.createElement('video')
       video.srcObject = stream
       video.muted = true
       await video.play()
-      await new Promise<void>(r => setTimeout(r, 600))
+      await new Promise<void>(resolve => {
+        if (video.readyState >= 2) { resolve(); return }
+        video.onloadedmetadata = () => resolve()
+      })
+      await new Promise<void>(r => setTimeout(r, 200))
 
       const canvas = document.createElement('canvas')
-      canvas.width = video.videoWidth
-      canvas.height = video.videoHeight
+      canvas.width = video.videoWidth || 640
+      canvas.height = video.videoHeight || 480
       canvas.getContext('2d')!.drawImage(video, 0, 0)
-      stream.getTracks().forEach(t => t.stop())
       photo = canvas.toDataURL('image/jpeg', 0.85).split(',')[1]
     } catch {
       setError('Camera access denied.')
       setStatus('idle')
       return
+    } finally {
+      stream?.getTracks().forEach(t => t.stop())
     }
 
     setStatus('checking')
