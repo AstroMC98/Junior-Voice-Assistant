@@ -6,6 +6,8 @@ import UrlFetcher from './UrlFetcher'
 import CameraCapture from './CameraCapture'
 import type { Guide } from '@/lib/types'
 import { API_BASE } from '@/lib/types'
+import { useApiKey } from '@/lib/ApiKeyContext'
+import { apiFetch, ApiKeyError } from '@/lib/apiFetch'
 
 type Source = 'pdf' | 'url' | 'camera'
 
@@ -21,15 +23,20 @@ export default function GuideCreator() {
   const [status, setStatus] = useState<'idle' | 'processing' | 'done' | 'error'>('idle')
   const [guideId, setGuideId] = useState<string | null>(null)
   const router = useRouter()
+  const { apiKey, openModal } = useApiKey()
 
   async function createGuide(payload: { text?: string; images?: string[] }) {
     if (!title.trim()) {
       alert('Enter a guide title first.')
       return
     }
+    if (!apiKey) {
+      openModal()
+      return
+    }
     setStatus('processing')
     try {
-      const res = await fetch(`${API_BASE}/api/guides`, {
+      const res = await apiFetch(`${API_BASE}/api/guides`, apiKey, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ source, title: title.trim(), ...payload }),
@@ -44,7 +51,12 @@ export default function GuideCreator() {
       )
       setGuideId(guide.id)
       setStatus('done')
-    } catch {
+    } catch (err) {
+      if (err instanceof ApiKeyError) {
+        openModal()
+        setStatus('idle')
+        return
+      }
       setStatus('error')
     }
   }
@@ -88,7 +100,7 @@ export default function GuideCreator() {
       {status === 'error' && (
         <div className="row" style={{ gap: 8 }}>
           <span className="tag tag-live">Error</span>
-          <span style={{ color: 'var(--muted)', fontSize: 13 }}>Processing failed. Check API keys in .env.local.</span>
+          <span style={{ color: 'var(--muted)', fontSize: 13 }}>Processing failed. Check your API key.</span>
         </div>
       )}
 
