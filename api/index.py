@@ -163,5 +163,25 @@ async def fetch_url(url: str = Query(...)):
     return {"text": strip_html(response.text)}
 
 
+_kb_trace_store = None
+
+
+async def _get_trace_store():
+    global _kb_trace_store
+    if _kb_trace_store is None:
+        from knowledge_base.store.trace_store import TraceStore
+        db_path = os.environ.get("KB_TRACE_DB", "traces.db")
+        _kb_trace_store = TraceStore(db_path=db_path)
+        await _kb_trace_store.init()
+    return _kb_trace_store
+
+
+@app.get("/api/kb/metrics")
+async def kb_metrics():
+    from knowledge_base.feedback.metrics import compute_metrics
+    store = await _get_trace_store()
+    return await compute_metrics(store)
+
+
 # Vercel / Lambda ASGI entry point — variable must be named "handler"
 handler = Mangum(app, lifespan="off")
