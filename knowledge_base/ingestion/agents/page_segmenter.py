@@ -2,6 +2,9 @@ import json
 import base64
 from dataclasses import dataclass
 import anthropic
+from knowledge_base.prompts.ingestion.page_segmenter import (
+    MODEL, MAX_TOKENS, SYSTEM_PROMPT, USER_TEMPLATE,
+)
 
 anthropic_client = anthropic.AsyncAnthropic()
 
@@ -17,32 +20,16 @@ class PageSegmenter:
     async def segment(self, page_image: bytes, page_number: int) -> SegmentationResult:
         b64 = base64.standard_b64encode(page_image).decode()
         response = await anthropic_client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=2048,
-            system="""Analyze this document page image. Identify all text blocks and image regions.
-Return ONLY valid JSON with this exact structure:
-{
-  "text_regions": [
-    {"bbox": [x, y, w, h], "text": "extracted text content", "confidence": 0.95}
-  ],
-  "image_regions": [
-    {"bbox": [x, y, w, h], "role_hint": "diagram|reference|positional_layout|state_repr|decorative"}
-  ]
-}
-bbox values are pixels from top-left corner.""",
+            model=MODEL,
+            max_tokens=MAX_TOKENS,
+            system=SYSTEM_PROMPT,
             messages=[{
                 "role": "user",
                 "content": [
-                    {
-                        "type": "image",
-                        "source": {"type": "base64", "media_type": "image/png", "data": b64}
-                    },
-                    {
-                        "type": "text",
-                        "text": f"Segment page {page_number}. Return JSON only, no explanation."
-                    }
-                ]
-            }]
+                    {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": b64}},
+                    {"type": "text", "text": USER_TEMPLATE.format(page_number=page_number)},
+                ],
+            }],
         )
         raw = response.content[0].text.strip()
         if raw.startswith("```"):
@@ -51,5 +38,5 @@ bbox values are pixels from top-left corner.""",
         return SegmentationResult(
             page_number=page_number,
             text_regions=data.get("text_regions", []),
-            image_regions=data.get("image_regions", [])
+            image_regions=data.get("image_regions", []),
         )
