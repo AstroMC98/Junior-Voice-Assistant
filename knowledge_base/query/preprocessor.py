@@ -2,6 +2,9 @@ import re
 import json
 import anthropic
 from knowledge_base.models.session import ProcessedQuery, Session
+from knowledge_base.prompts.query.preprocessor import (
+    MODEL, MAX_TOKENS, SYSTEM_PROMPT, USER_TEMPLATE, PreprocessorOutput,
+)
 
 anthropic_client = anthropic.AsyncAnthropic()
 
@@ -23,20 +26,17 @@ class TranscriptPreprocessor:
             corrections.append(m.group(1))
 
         response = await anthropic_client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=256,
-            system="Extract entities from a voice query. Return JSON only.",
-            messages=[{"role": "user", "content": (
-                f"Query: {cleaned}\n"
-                'Return: {"colors": [...], "numbers": [...], "positions": ["top","left",...], '
-                '"labels": [...], "uncertainty": ["phrases expressing doubt"]}'
-            )}],
+            model=MODEL,
+            max_tokens=MAX_TOKENS,
+            system=SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": USER_TEMPLATE.format(query=cleaned)}],
         )
         raw_json = response.content[0].text.strip()
         if "```" in raw_json:
             parts = raw_json.split("```")
             raw_json = parts[1].lstrip("json").strip() if len(parts) > 1 else raw_json
-        entities = json.loads(raw_json)
+
+        entities = PreprocessorOutput.model_validate(json.loads(raw_json)).model_dump()
         uncertainty = entities.pop("uncertainty", [])
 
         return ProcessedQuery(

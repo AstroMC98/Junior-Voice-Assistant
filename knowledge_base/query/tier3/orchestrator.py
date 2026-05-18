@@ -1,8 +1,10 @@
 import anthropic
 from knowledge_base.models.session import ProcessedQuery, Session
 from knowledge_base.store.knowledge_store import KnowledgeStore
-
-MAX_AGENT_CALLS = 10
+from knowledge_base.prompts.query.tier3_orchestrator import (
+    MODEL, MAX_TOKENS, MAX_AGENT_CALLS,
+    SEARCH_TOOL_DEFINITION, FALLBACK_RESPONSE, INITIAL_USER_TEMPLATE,
+)
 
 
 class Tier3Orchestrator:
@@ -16,25 +18,14 @@ class Tier3Orchestrator:
         session: Session,
         failure_trace: list[dict],
     ) -> str:
-        tools = [
-            {
-                "name": "search_knowledge_base",
-                "description": "Search the knowledge base by keyword. Returns matching entry titles.",
-                "input_schema": {
-                    "type": "object",
-                    "properties": {"keyword": {"type": "string"}},
-                    "required": ["keyword"],
-                },
-            }
-        ]
+        tools = [SEARCH_TOOL_DEFINITION]
 
         messages = [
             {
                 "role": "user",
-                "content": (
-                    f"Query: {query.cleaned_text}\n"
-                    f"Previous Tier 1 and Tier 2 attempts failed: {failure_trace}\n"
-                    "Answer ONLY from the knowledge base using the search tool. Cite entry IDs."
+                "content": INITIAL_USER_TEMPLATE.format(
+                    query=query.cleaned_text,
+                    failure_trace=failure_trace,
                 ),
             }
         ]
@@ -42,8 +33,8 @@ class Tier3Orchestrator:
         calls = 0
         while calls < MAX_AGENT_CALLS:
             response = await self.client.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=1024,
+                model=MODEL,
+                max_tokens=MAX_TOKENS,
                 tools=tools,
                 messages=messages,
             )
@@ -51,7 +42,7 @@ class Tier3Orchestrator:
             if response.stop_reason == "end_turn":
                 return next(
                     (b.text for b in response.content if hasattr(b, "text")),
-                    "I was unable to find a definitive answer in the knowledge base.",
+                    FALLBACK_RESPONSE,
                 )
 
             tool_use = next(
@@ -75,4 +66,4 @@ class Tier3Orchestrator:
             })
             calls += 1
 
-        return "I was unable to find a definitive answer in the knowledge base."
+        return FALLBACK_RESPONSE
