@@ -6,35 +6,43 @@ interface Props {
 }
 
 export default function PdfUploader({ onCapture }: Props) {
-  const [status, setStatus] = useState<'idle' | 'loading'>('idle')
+  const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle')
   const [pageCount, setPageCount] = useState(0)
+  const [current, setCurrent] = useState(0)
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
     setStatus('loading')
+    setCurrent(0)
 
-    const pdfjsLib = await import('pdfjs-dist')
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-      `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`
+    try {
+      const pdfjsLib = await import('pdfjs-dist')
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`
 
-    const arrayBuffer = await file.arrayBuffer()
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
-    setPageCount(pdf.numPages)
+      const arrayBuffer = await file.arrayBuffer()
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+      setPageCount(pdf.numPages)
 
-    const images: string[] = []
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i)
-      const viewport = page.getViewport({ scale: 1.5 })
-      const canvas = document.createElement('canvas')
-      canvas.width = viewport.width
-      canvas.height = viewport.height
-      await page.render({ canvas, viewport } as Parameters<typeof page.render>[0]).promise
-      images.push(canvas.toDataURL('image/png').split(',')[1])
+      const images: string[] = []
+      for (let i = 1; i <= pdf.numPages; i++) {
+        setCurrent(i)
+        const page = await pdf.getPage(i)
+        const viewport = page.getViewport({ scale: 1.5 })
+        const canvas = document.createElement('canvas')
+        canvas.width = viewport.width
+        canvas.height = viewport.height
+        await page.render({ canvasContext: canvas.getContext('2d')!, viewport }).promise
+        images.push(canvas.toDataURL('image/png').split(',')[1])
+      }
+
+      setStatus('idle')
+      onCapture(images)
+    } catch (err) {
+      console.error('PDF render error:', err)
+      setStatus('error')
     }
-
-    setStatus('idle')
-    onCapture(images)
   }
 
   return (
@@ -51,7 +59,12 @@ export default function PdfUploader({ onCapture }: Props) {
       />
       {status === 'loading' && (
         <p className="text-slate-400 text-sm animate-pulse">
-          Rendering {pageCount > 0 ? `${pageCount} pages` : 'PDF'}...
+          Rendering page {current}{pageCount > 0 ? ` of ${pageCount}` : ''}…
+        </p>
+      )}
+      {status === 'error' && (
+        <p className="text-red-400 text-sm">
+          Failed to render PDF. Check the browser console for details.
         </p>
       )}
     </div>

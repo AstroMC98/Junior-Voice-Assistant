@@ -2,7 +2,6 @@ import os
 import base64
 import re
 import time
-from pathlib import Path
 from urllib.parse import urlparse
 
 import httpx
@@ -20,14 +19,11 @@ from api.models import (
 from api.kv import get_guide, save_guide
 from api.blob import upload_image
 from api.claude import process_guide, session_turn
+from api.env import load_env_file
 from api.utils import generate_id, strip_html
 
 # Load .env.local for local development (Vercel injects env vars directly in production)
-if os.path.exists(".env.local"):
-    for line in Path(".env.local").read_text().splitlines():
-        if line and not line.startswith("#") and "=" in line:
-            k, _, v = line.partition("=")
-            os.environ.setdefault(k.strip(), v.strip())
+load_env_file(".env.local")
 
 # CORS — only active when CORS_ORIGINS is set (local dev only)
 _cors_origins_env = os.environ.get("CORS_ORIGINS", "")
