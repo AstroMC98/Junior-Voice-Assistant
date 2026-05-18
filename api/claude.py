@@ -1,6 +1,11 @@
 from anthropic import Anthropic
 from api.models import Guide, Step, SessionResponse
 from api.utils import extract_json
+from api.prompts import (
+    PROCESS_GUIDE_MODEL, PROCESS_GUIDE_MAX_TOKENS,
+    PROCESS_GUIDE_SYSTEM, PROCESS_GUIDE_USER_IMAGE_SUFFIX,
+    SESSION_TURN_MODEL, SESSION_TURN_MAX_TOKENS, SESSION_TURN_SYSTEM_TEMPLATE,
+)
 
 
 async def process_guide(
@@ -21,26 +26,15 @@ async def process_guide(
             user_content.append({"type": "text", "text": f"[Page {i}]"})
         user_content.append({
             "type": "text",
-            "text": (
-                "Extract all ordered steps from this guide. "
-                "For steps associated with an image, set image_index to that [Page N] number."
-            ),
+            "text": PROCESS_GUIDE_USER_IMAGE_SUFFIX,
         })
     else:
         user_content.append({"type": "text", "text": text or ""})
 
     response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=4096,
-        system=(
-            "Extract ordered steps from this guide document.\n"
-            "Return ONLY a valid JSON array. Each element must follow this shape exactly:\n"
-            '{ "index": number, "title": string, "content": string, "image_index"?: number, '
-            '"crop"?: { "x": number, "y": number, "w": number, "h": number } }\n'
-            "image_index refers to which [Page N] label the step's image appears on.\n"
-            "crop is the relevant region of that page image as percentage of image dimensions (0-100).\n"
-            "No markdown, no prose — JSON array only."
-        ),
+        model=PROCESS_GUIDE_MODEL,
+        max_tokens=PROCESS_GUIDE_MAX_TOKENS,
+        system=PROCESS_GUIDE_SYSTEM,
         messages=[{"role": "user", "content": user_content}],
     )
 
@@ -71,27 +65,18 @@ async def session_turn(
         f"Step {s.index + 1}: {s.title} — {s.content}" for s in guide.steps
     )
 
-    system_prompt = (
-        f'You are Junior, a hands-free guide assistant.\n'
-        f'Guide: "{guide.title}"\n'
-        f"All steps:\n{steps_context}\n\n"
-        f"Current step: {step.index + 1} of {len(guide.steps)} — {step.title}: {step.content}\n\n"
-        "Rules:\n"
-        "- Respond in 1-2 sentences, naturally spoken\n"
-        '- If the user says "next", "done", or "continue": set action to "advance", '
-        "step to the next 0-based step index (current + 1)\n"
-        '- If the user says "go back", "back", or "previous": set action to "advance", '
-        "step to the previous 0-based index (current - 1, minimum 0)\n"
-        '- If the user asks to see something visually ("show me", "what does it look like"): '
-        'set action to "show_image", step to current 0-based index\n'
-        "- On a camera photo: assess whether it matches the current step; give clear go/no-go feedback\n"
-        "- Always respond as valid JSON only — no prose outside the JSON:\n"
-        '  { "speech": "...", "action": "show_image" | "advance" | null, "step": <0-based number or null> }'
+    system_prompt = SESSION_TURN_SYSTEM_TEMPLATE.format(
+        guide_title=guide.title,
+        steps_context=steps_context,
+        current_step_num=step.index + 1,
+        total_steps=len(guide.steps),
+        step_title=step.title,
+        step_content=step.content,
     )
 
     response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=512,
+        model=SESSION_TURN_MODEL,
+        max_tokens=SESSION_TURN_MAX_TOKENS,
         system=system_prompt,
         messages=[{"role": "user", "content": user_content}],
     )
