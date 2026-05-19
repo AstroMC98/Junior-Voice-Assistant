@@ -1,5 +1,5 @@
 'use client'
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import type { Guide, SessionResponse } from '@/lib/types'
 import { API_BASE } from '@/lib/types'
 import { useApiKey } from '@/lib/ApiKeyContext'
@@ -28,16 +28,26 @@ export default function VoiceLoop({ guide, currentStepIndex, onResponse }: Props
   currentStepRef.current = currentStepIndex
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
+  const isRecordingRef = useRef(false)
+  const mountedRef = useRef(true)
   const { apiKey, openModal } = useApiKey()
+
+  useEffect(() => {
+    return () => { mountedRef.current = false }
+  }, [])
 
   const stopListening = useCallback(() => {
     mediaRecorderRef.current?.stop()
   }, [])
 
   const startListening = useCallback(async () => {
-    if (!apiKey) { openModal(); return }
+    if (isRecordingRef.current) return
+    isRecordingRef.current = true
+
+    if (!apiKey) { isRecordingRef.current = false; openModal(); return }
 
     if (!window.MediaRecorder) {
+      isRecordingRef.current = false
       alert('Audio recording is not available in this browser. Use Chrome, Edge, or Firefox.')
       return
     }
@@ -46,6 +56,7 @@ export default function VoiceLoop({ guide, currentStepIndex, onResponse }: Props
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true })
     } catch {
+      isRecordingRef.current = false
       alert('Microphone access denied. Please allow microphone access and try again.')
       return
     }
@@ -54,7 +65,16 @@ export default function VoiceLoop({ guide, currentStepIndex, onResponse }: Props
       ? 'audio/webm;codecs=opus'
       : 'audio/webm'
 
-    const recorder = new MediaRecorder(stream, { mimeType })
+    let recorder: MediaRecorder
+    try {
+      recorder = new MediaRecorder(stream, { mimeType })
+    } catch {
+      isRecordingRef.current = false
+      stream.getTracks().forEach((t) => t.stop())
+      alert('Audio recording failed to start.')
+      return
+    }
+
     mediaRecorderRef.current = recorder
     audioChunksRef.current = []
 
@@ -63,7 +83,9 @@ export default function VoiceLoop({ guide, currentStepIndex, onResponse }: Props
     }
 
     recorder.onstop = async () => {
+      isRecordingRef.current = false
       stream.getTracks().forEach((t) => t.stop())
+      if (!mountedRef.current) return
 
       const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
       setStatus('thinking')
@@ -83,12 +105,13 @@ export default function VoiceLoop({ guide, currentStepIndex, onResponse }: Props
 
         const utt = new SpeechSynthesisUtterance(response.speech)
         utt.rate = 1.05
-        utt.onend = () => setStatus('idle')
+        utt.onend = () => { if (mountedRef.current) setStatus('idle') }
         speechSynthesis.cancel()
         speechSynthesis.speak(utt)
 
         onResponse(response)
       } catch (err) {
+        if (!mountedRef.current) return
         if (err instanceof ApiKeyError) openModal()
         setStatus('idle')
       }
