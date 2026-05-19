@@ -109,6 +109,7 @@ export default function VoiceLoop({ guide, currentStepIndex, onResponse }: Props
         speechSynthesis.cancel()
         speechSynthesis.speak(utt)
 
+        if (!mountedRef.current) return
         onResponse(response)
       } catch (err) {
         if (!mountedRef.current) return

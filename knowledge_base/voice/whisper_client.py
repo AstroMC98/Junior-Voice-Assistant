@@ -11,7 +11,7 @@ def _get_client() -> AsyncOpenAI:
     return client
 
 
-async def transcribe(audio_bytes: bytes, audio_format: str = "wav") -> str:
+async def transcribe(audio_bytes: bytes, audio_format: str = "webm") -> str:
     c = _get_client()
     audio_file = io.BytesIO(audio_bytes)
     audio_file.name = f"audio.{audio_format}"
