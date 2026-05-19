@@ -5,7 +5,8 @@ import time
 from urllib.parse import urlparse
 
 import httpx
-from fastapi import FastAPI, HTTPException, Query, Request, Depends
+from fastapi import FastAPI, File, Form, HTTPException, Query, Request, Depends, UploadFile
+import json as _json
 from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
 
@@ -19,6 +20,7 @@ from api.models import (
 from api.kv import get_guide, save_guide
 from api.blob import upload_image
 from api.claude import process_guide, session_turn
+from api.transcription import transcribe_audio
 from api.env import load_env_file
 from api.utils import generate_id, strip_html
 
@@ -124,17 +126,28 @@ async def fork_guide(guide_id: str):
 
 
 @app.post("/api/session", response_model=SessionResponse)
-async def session_endpoint(body: SessionTurnRequest, api_key: str = Depends(require_api_key)):
-    if not body.guide.steps:
+async def session_endpoint(
+    audio: UploadFile = File(...),
+    guide: str = Form(...),
+    currentStepIndex: int = Form(...),
+    photo: str | None = Form(None),
+    api_key: str = Depends(require_api_key),
+):
+    guide_obj = Guide(**_json.loads(guide))
+
+    if not guide_obj.steps:
         raise HTTPException(status_code=400, detail="Missing required fields")
-    if body.currentStepIndex < 0 or body.currentStepIndex >= len(body.guide.steps):
+    if currentStepIndex < 0 or currentStepIndex >= len(guide_obj.steps):
         raise HTTPException(status_code=400, detail="Step index out of range")
 
+    audio_bytes = await audio.read()
+    transcript = await transcribe_audio(audio_bytes)
+
     return await session_turn(
-        guide=body.guide,
-        current_step_index=body.currentStepIndex,
-        transcript=body.transcript,
-        photo=body.photo,
+        guide=guide_obj,
+        current_step_index=currentStepIndex,
+        transcript=transcript,
+        photo=photo,
         api_key=api_key,
     )
 
