@@ -11,34 +11,6 @@ interface Props {
   onResponse: (response: SessionResponse) => void
 }
 
-interface SpeechRecognitionResult {
-  readonly length: number
-  [index: number]: { transcript: string; confidence: number }
-}
-interface SpeechRecognitionResultList {
-  readonly length: number
-  [index: number]: SpeechRecognitionResult
-}
-interface SpeechRecognitionEvent extends Event {
-  results: SpeechRecognitionResultList
-}
-interface SpeechRecognitionInstance extends EventTarget {
-  lang: string
-  interimResults: boolean
-  maxAlternatives: number
-  onresult: ((event: SpeechRecognitionEvent) => void) | null
-  onerror: ((event: Event) => void) | null
-  onend: ((event: Event) => void) | null
-  start(): void
-}
-
-declare global {
-  interface Window {
-    SpeechRecognition: new () => SpeechRecognitionInstance
-    webkitSpeechRecognition: new () => SpeechRecognitionInstance
-  }
-}
-
 function MicIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -54,38 +26,58 @@ export default function VoiceLoop({ guide, currentStepIndex, onResponse }: Props
   const [status, setStatus] = useState<'idle' | 'listening' | 'thinking'>('idle')
   const currentStepRef = useRef(currentStepIndex)
   currentStepRef.current = currentStepIndex
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
   const { apiKey, openModal } = useApiKey()
 
-  const startListening = useCallback(() => {
-    const SR = window.SpeechRecognition ?? window.webkitSpeechRecognition
-    if (!SR) {
-      alert('Speech recognition is not available in this browser. Use Chrome or Edge.')
-      return
-    }
-    if (!apiKey) {
-      openModal()
+  const stopListening = useCallback(() => {
+    mediaRecorderRef.current?.stop()
+  }, [])
+
+  const startListening = useCallback(async () => {
+    if (!apiKey) { openModal(); return }
+
+    if (!window.MediaRecorder) {
+      alert('Audio recording is not available in this browser. Use Chrome, Edge, or Firefox.')
       return
     }
 
-    const rec = new SR()
-    rec.lang = 'en-US'
-    rec.interimResults = false
-    rec.maxAlternatives = 1
-    setStatus('listening')
+    let stream: MediaStream
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    } catch {
+      alert('Microphone access denied. Please allow microphone access and try again.')
+      return
+    }
 
-    rec.onresult = async (event: SpeechRecognitionEvent) => {
-      const transcript = event.results[0][0].transcript
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus'
+      : 'audio/webm'
+
+    const recorder = new MediaRecorder(stream, { mimeType })
+    mediaRecorderRef.current = recorder
+    audioChunksRef.current = []
+
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) audioChunksRef.current.push(e.data)
+    }
+
+    recorder.onstop = async () => {
+      stream.getTracks().forEach((t) => t.stop())
+
+      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
       setStatus('thinking')
 
+      const formData = new FormData()
+      formData.append('audio', audioBlob, 'audio.webm')
+      formData.append('guide', JSON.stringify(guide))
+      formData.append('currentStepIndex', String(currentStepRef.current))
+
       try {
+        // No Content-Type header — browser sets multipart/form-data with boundary automatically
         const res = await apiFetch(`${API_BASE}/api/session`, apiKey, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            guide,
-            currentStepIndex: currentStepRef.current,
-            transcript,
-          }),
+          body: formData,
         })
         const response: SessionResponse = await res.json()
 
@@ -102,29 +94,32 @@ export default function VoiceLoop({ guide, currentStepIndex, onResponse }: Props
       }
     }
 
-    rec.onerror = () => setStatus('idle')
-    rec.onend = () => setStatus(prev => prev === 'listening' ? 'idle' : prev)
-
-    rec.start()
+    recorder.start()
+    setStatus('listening')
   }, [guide, onResponse, apiKey, openModal])
+
+  const handleClick = useCallback(() => {
+    if (status === 'idle') startListening()
+    else if (status === 'listening') stopListening()
+  }, [status, startListening, stopListening])
 
   const isListening = status === 'listening'
   const isThinking = status === 'thinking'
 
   return (
     <button
-      onClick={startListening}
-      disabled={status !== 'idle'}
+      onClick={handleClick}
+      disabled={isThinking}
       className={[
         'btn btn-lg btn-block',
         isListening ? 'btn-primary pulse' : '',
         isThinking ? 'btn-secondary' : '',
         !isListening && !isThinking ? 'btn-primary' : '',
       ].filter(Boolean).join(' ')}
-      style={{ gap: 10, cursor: status !== 'idle' ? 'default' : 'pointer' }}
+      style={{ gap: 10, cursor: isThinking ? 'default' : 'pointer' }}
     >
       <MicIcon />
-      {status === 'idle' ? 'Tap to Speak' : status === 'listening' ? 'Listening…' : 'Thinking…'}
+      {status === 'idle' ? 'Tap to Speak' : status === 'listening' ? 'Tap to Stop' : 'Thinking…'}
     </button>
   )
 }
