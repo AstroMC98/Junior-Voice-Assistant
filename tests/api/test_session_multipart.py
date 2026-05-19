@@ -70,6 +70,7 @@ def test_session_endpoint_returns_400_for_invalid_step_index(
 
     assert response.status_code == 400
     assert "Step index out of range" in response.json()["detail"]
+    mock_transcribe.assert_not_called()
     mock_session_turn.assert_not_called()
 
 

@@ -133,7 +133,10 @@ async def session_endpoint(
     photo: str | None = Form(None),
     api_key: str = Depends(require_api_key),
 ):
-    guide_obj = Guide(**_json.loads(guide))
+    try:
+        guide_obj = Guide(**_json.loads(guide))
+    except (ValueError, Exception):
+        raise HTTPException(status_code=400, detail="Invalid guide payload")
 
     if not guide_obj.steps:
         raise HTTPException(status_code=400, detail="Missing required fields")
@@ -141,6 +144,8 @@ async def session_endpoint(
         raise HTTPException(status_code=400, detail="Step index out of range")
 
     audio_bytes = await audio.read()
+    if not audio_bytes:
+        raise HTTPException(status_code=400, detail="Audio file is empty")
     transcript = await transcribe_audio(audio_bytes)
 
     return await session_turn(
