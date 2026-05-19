@@ -6,3 +6,4 @@ httpx==0.28.1
 python-nanoid==2.0.0
 beautifulsoup4==4.13.4
 aiosqlite==0.20.0
+./LLMClient

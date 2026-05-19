@@ -37,9 +37,28 @@ next-env.d.ts
 .superpowers
 .claude
 
-# python
+# python — virtual environments
 .venv/
+venv/
+env/
+
+# python — bytecode
 __pycache__/
 *.pyc
+*.pyo
+
+# python — pytest
+.pytest_cache/
+
+# python — coverage
+.coverage
+.coverage.*
+htmlcov/
+
+# python — databases (local dev)
+*.db
+*.sqlite3
+
+# project — local assets not for version control
 design-system/
 data/
