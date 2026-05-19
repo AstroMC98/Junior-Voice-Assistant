@@ -50,16 +50,20 @@ async def test_run_phase_empty_list():
 
 
 from knowledge_base.ingestion.agents.page_segmenter import PageSegmenter, SegmentationResult
+from knowledge_base.prompts.ingestion.page_segmenter import (
+    PageSegmenterOutput, TextRegion, ImageRegion,
+)
 
 
 @pytest.mark.asyncio
 async def test_page_segmenter_returns_text_and_image_regions():
-    mock_json = '{"text_regions": [{"bbox": [0,0,595,100], "text": "Cut the red wire", "confidence": 0.95}], "image_regions": [{"bbox": [0,100,595,300], "role_hint": "diagram"}]}'
     mock_response = MagicMock()
-    mock_response.content = [MagicMock(text=mock_json)]
-
-    with patch("knowledge_base.ingestion.agents.page_segmenter.anthropic_client") as mock_client:
-        mock_client.messages.create = AsyncMock(return_value=mock_response)
+    mock_response.parsed = PageSegmenterOutput(
+        text_regions=[TextRegion(bbox=[0, 0, 595, 100], text="Cut the red wire", confidence=0.95)],
+        image_regions=[ImageRegion(bbox=[0, 100, 595, 300], role_hint="diagram")],
+    )
+    with patch("knowledge_base.ingestion.agents.page_segmenter.generate_with_image",
+               AsyncMock(return_value=mock_response)):
         seg = PageSegmenter()
         result = await seg.segment(page_image=b"fake_png_bytes", page_number=3)
 
@@ -73,11 +77,10 @@ async def test_page_segmenter_returns_text_and_image_regions():
 
 @pytest.mark.asyncio
 async def test_page_segmenter_handles_empty_page():
-    mock_json = '{"text_regions": [], "image_regions": []}'
     mock_response = MagicMock()
-    mock_response.content = [MagicMock(text=mock_json)]
-    with patch("knowledge_base.ingestion.agents.page_segmenter.anthropic_client") as mock_client:
-        mock_client.messages.create = AsyncMock(return_value=mock_response)
+    mock_response.parsed = PageSegmenterOutput(text_regions=[], image_regions=[])
+    with patch("knowledge_base.ingestion.agents.page_segmenter.generate_with_image",
+               AsyncMock(return_value=mock_response)):
         seg = PageSegmenter()
         result = await seg.segment(b"blank", 0)
     assert result.text_regions == []
@@ -89,11 +92,13 @@ from knowledge_base.ingestion.agents.document_classifier import DocumentClassifi
 
 @pytest.mark.asyncio
 async def test_document_classifier_returns_type():
-    mock_json = '{"document_type": "game_manual", "confidence": 0.92, "reasoning": "Contains module defusal instructions"}'
     mock_response = MagicMock()
-    mock_response.content = [MagicMock(text=mock_json)]
-    with patch("knowledge_base.ingestion.agents.document_classifier.anthropic_client") as mock_client:
-        mock_client.messages.create = AsyncMock(return_value=mock_response)
+    mock_response.parsed.model_dump.return_value = {
+        "document_type": "game_manual", "confidence": 0.92,
+        "reasoning": "Contains module defusal instructions",
+    }
+    with patch("knowledge_base.ingestion.agents.document_classifier.generate_with_images",
+               AsyncMock(return_value=mock_response)):
         clf = DocumentClassifier()
         result = await clf.classify(first_pages=[b"page1_png", b"page2_png"])
     assert result["document_type"] == "game_manual"
@@ -102,16 +107,16 @@ async def test_document_classifier_returns_type():
 
 @pytest.mark.asyncio
 async def test_document_classifier_limits_to_3_pages():
-    mock_json = '{"document_type": "recipe", "confidence": 0.88, "reasoning": "Contains ingredients"}'
     mock_response = MagicMock()
-    mock_response.content = [MagicMock(text=mock_json)]
-    with patch("knowledge_base.ingestion.agents.document_classifier.anthropic_client") as mock_client:
-        mock_client.messages.create = AsyncMock(return_value=mock_response)
+    mock_response.parsed.model_dump.return_value = {
+        "document_type": "recipe", "confidence": 0.88, "reasoning": "Contains ingredients",
+    }
+    with patch("knowledge_base.ingestion.agents.document_classifier.generate_with_images",
+               AsyncMock(return_value=mock_response)) as mock_gen:
         clf = DocumentClassifier()
-        result = await clf.classify(first_pages=[b"p"] * 10)
-    call_args = mock_client.messages.create.call_args
-    image_blocks = [c for c in call_args.kwargs["messages"][0]["content"] if c.get("type") == "image"]
-    assert len(image_blocks) == 3
+        await clf.classify(first_pages=[b"p"] * 10)
+    images_sent = mock_gen.call_args.args[1]
+    assert len(images_sent) == 3
 
 
 from knowledge_base.ingestion.agents.chunk_classifier import ChunkClassifier
@@ -120,11 +125,10 @@ from knowledge_base.ingestion.agents.image_classifier import ImageClassifier
 
 @pytest.mark.asyncio
 async def test_chunk_classifier_returns_entry_type():
-    mock_json = '{"entry_type": "decision_tree", "confidence": 0.88}'
     mock_response = MagicMock()
-    mock_response.content = [MagicMock(text=mock_json)]
-    with patch("knowledge_base.ingestion.agents.chunk_classifier.anthropic_client") as mock_client:
-        mock_client.messages.create = AsyncMock(return_value=mock_response)
+    mock_response.parsed.model_dump.return_value = {"entry_type": "decision_tree", "confidence": 0.88}
+    with patch("knowledge_base.ingestion.agents.chunk_classifier.run_llm",
+               AsyncMock(return_value=mock_response)):
         clf = ChunkClassifier()
         result = await clf.classify(
             text="If the last digit of serial is even, cut the red wire.",
@@ -136,11 +140,10 @@ async def test_chunk_classifier_returns_entry_type():
 
 @pytest.mark.asyncio
 async def test_image_classifier_returns_role():
-    mock_json = '{"role": "logic_diagram", "confidence": 0.91}'
     mock_response = MagicMock()
-    mock_response.content = [MagicMock(text=mock_json)]
-    with patch("knowledge_base.ingestion.agents.image_classifier.anthropic_client") as mock_client:
-        mock_client.messages.create = AsyncMock(return_value=mock_response)
+    mock_response.parsed.model_dump.return_value = {"role": "logic_diagram", "confidence": 0.91}
+    with patch("knowledge_base.ingestion.agents.image_classifier.generate_with_image",
+               AsyncMock(return_value=mock_response)):
         clf = ImageClassifier()
         result = await clf.classify_role(role_hint="diagram", image_bytes=b"png_data")
     assert result["role"] == "logic_diagram"

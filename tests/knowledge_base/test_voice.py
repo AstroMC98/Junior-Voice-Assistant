@@ -130,9 +130,8 @@ def test_formatter_low_urgency_unchanged():
 # ── TranscriptPreprocessor tests ──────────────────────────────────────────
 
 def _mock_entity_response(entities: dict):
-    import json
     mock_resp = MagicMock()
-    mock_resp.content = [MagicMock(text=json.dumps(entities))]
+    mock_resp.parsed.model_dump.return_value = dict(entities)
     return mock_resp
 
 
@@ -140,10 +139,8 @@ def _mock_entity_response(entities: dict):
 async def test_preprocessor_strips_disfluencies():
     from knowledge_base.query.preprocessor import TranscriptPreprocessor
     session = _make_session("normal")
-    with patch("knowledge_base.query.preprocessor.anthropic_client") as mock_client:
-        mock_client.messages.create = AsyncMock(
-            return_value=_mock_entity_response({"colors": [], "numbers": [], "positions": [], "labels": [], "uncertainty": []})
-        )
+    with patch("knowledge_base.query.preprocessor.run_llm",
+               AsyncMock(return_value=_mock_entity_response({"colors": [], "numbers": [], "positions": [], "labels": [], "uncertainty": []}))):
         proc = TranscriptPreprocessor()
         result = await proc.process("um cut the uh red wire", session)
     assert "um" not in result.cleaned_text
@@ -155,13 +152,11 @@ async def test_preprocessor_strips_disfluencies():
 async def test_preprocessor_extracts_entities():
     from knowledge_base.query.preprocessor import TranscriptPreprocessor
     session = _make_session("normal")
-    with patch("knowledge_base.query.preprocessor.anthropic_client") as mock_client:
-        mock_client.messages.create = AsyncMock(
-            return_value=_mock_entity_response({
-                "colors": ["red", "blue"], "numbers": ["3"],
-                "positions": ["top"], "labels": [], "uncertainty": [],
-            })
-        )
+    with patch("knowledge_base.query.preprocessor.run_llm",
+               AsyncMock(return_value=_mock_entity_response({
+                   "colors": ["red", "blue"], "numbers": ["3"],
+                   "positions": ["top"], "labels": [], "uncertainty": [],
+               }))):
         proc = TranscriptPreprocessor()
         result = await proc.process("cut the red wire on top", session)
     assert result.extracted_entities["colors"] == ["red", "blue"]
@@ -172,10 +167,8 @@ async def test_preprocessor_extracts_entities():
 async def test_preprocessor_detects_correction():
     from knowledge_base.query.preprocessor import TranscriptPreprocessor
     session = _make_session("normal")
-    with patch("knowledge_base.query.preprocessor.anthropic_client") as mock_client:
-        mock_client.messages.create = AsyncMock(
-            return_value=_mock_entity_response({"colors": [], "numbers": [], "positions": [], "labels": [], "uncertainty": []})
-        )
+    with patch("knowledge_base.query.preprocessor.run_llm",
+               AsyncMock(return_value=_mock_entity_response({"colors": [], "numbers": [], "positions": [], "labels": [], "uncertainty": []}))):
         proc = TranscriptPreprocessor()
         result = await proc.process("it's red, wait no, it's blue", session)
     assert "blue" in result.corrections_detected
@@ -185,13 +178,11 @@ async def test_preprocessor_detects_correction():
 async def test_preprocessor_captures_uncertainty():
     from knowledge_base.query.preprocessor import TranscriptPreprocessor
     session = _make_session("normal")
-    with patch("knowledge_base.query.preprocessor.anthropic_client") as mock_client:
-        mock_client.messages.create = AsyncMock(
-            return_value=_mock_entity_response({
-                "colors": ["yellow"], "numbers": [], "positions": [], "labels": [],
-                "uncertainty": ["I think it's yellow"],
-            })
-        )
+    with patch("knowledge_base.query.preprocessor.run_llm",
+               AsyncMock(return_value=_mock_entity_response({
+                   "colors": ["yellow"], "numbers": [], "positions": [], "labels": [],
+                   "uncertainty": ["I think it's yellow"],
+               }))):
         proc = TranscriptPreprocessor()
         result = await proc.process("I think it's yellow", session)
     assert len(result.uncertainty_flags) == 1
@@ -203,10 +194,9 @@ async def test_preprocessor_preserves_raw_text():
     from knowledge_base.query.preprocessor import TranscriptPreprocessor
     session = _make_session("normal")
     raw = "um so like cut the wire"
-    with patch("knowledge_base.query.preprocessor.anthropic_client") as mock_client:
-        mock_client.messages.create = AsyncMock(
-            return_value=_mock_entity_response({"colors": [], "numbers": [], "positions": [], "labels": [], "uncertainty": []})
-        )
+    with patch("knowledge_base.query.preprocessor.run_llm",
+               AsyncMock(return_value=_mock_entity_response({"colors": [], "numbers": [], "positions": [], "labels": [], "uncertainty": []}))):
+
         proc = TranscriptPreprocessor()
         result = await proc.process(raw, session)
     assert result.raw_text == raw

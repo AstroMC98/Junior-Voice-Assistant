@@ -1,24 +1,18 @@
-import json
-import anthropic
+from knowledge_base.llm_clients import ingestion_client
+from knowledge_base.utils.async_llm import run_llm
 from knowledge_base.prompts.ingestion.vernacular_generator import (
-    MODEL, MAX_TOKENS, SYSTEM_PROMPT, USER_TEMPLATE,
+    MODEL, MAX_TOKENS, SYSTEM_PROMPT, USER_TEMPLATE, VernacularOutput,
 )
-
-anthropic_client = anthropic.AsyncAnthropic()
 
 
 class VernacularGenerator:
     async def generate(self, title: str, summary: str, tags: list[str]) -> list[str]:
-        response = await anthropic_client.messages.create(
+        response = await run_llm(
+            ingestion_client.generate,
+            USER_TEMPLATE.format(title=title, summary=summary, tags=", ".join(tags)),
+            system_instruction=SYSTEM_PROMPT,
+            response_schema=VernacularOutput,
+            max_output_tokens=MAX_TOKENS,
             model=MODEL,
-            max_tokens=MAX_TOKENS,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": USER_TEMPLATE.format(
-                title=title, summary=summary, tags=", ".join(tags),
-            )}],
         )
-        raw = response.content[0].text.strip()
-        if "```" in raw:
-            parts = raw.split("```")
-            raw = parts[1].lstrip("json").strip() if len(parts) > 1 else raw
-        return json.loads(raw)
+        return response.parsed.terms

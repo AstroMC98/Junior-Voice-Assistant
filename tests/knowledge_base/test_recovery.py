@@ -104,9 +104,9 @@ async def test_raw_text_fallback_answers_from_entry():
     mock_store.get = AsyncMock(return_value=entry)
 
     mock_resp = MagicMock()
-    mock_resp.content = [MagicMock(text="Cut the red wire.")]
-    with patch("knowledge_base.query.recovery.raw_text_fallback.anthropic_client") as mock_client:
-        mock_client.messages.create = AsyncMock(return_value=mock_resp)
+    mock_resp.text = "Cut the red wire."
+    with patch("knowledge_base.query.recovery.raw_text_fallback.run_llm",
+               AsyncMock(return_value=mock_resp)):
         rec = RawTextFallbackRecovery(store=mock_store)
         result = await rec.attempt({}, _make_query("what do I do?"), _make_session("e1"))
     assert result.success is True
@@ -152,18 +152,11 @@ async def test_tier3_returns_answer_on_end_turn():
     from knowledge_base.query.tier3.orchestrator import Tier3Orchestrator
 
     mock_store = MagicMock()
-    mock_store.search_by_tag = AsyncMock(return_value=[])
-
-    content_block = MagicMock()
-    content_block.text = "Cut the red wire."
     mock_response = MagicMock()
-    mock_response.stop_reason = "end_turn"
-    mock_response.content = [content_block]
+    mock_response.text = "Cut the red wire."
 
-    with patch("knowledge_base.query.tier3.orchestrator.anthropic.AsyncAnthropic") as mock_cls:
-        mock_client = MagicMock()
-        mock_client.messages.create = AsyncMock(return_value=mock_response)
-        mock_cls.return_value = mock_client
+    with patch("knowledge_base.query.tier3.orchestrator.run_llm",
+               AsyncMock(return_value=mock_response)):
         orchestrator = Tier3Orchestrator(store=mock_store)
         result = await orchestrator.resolve(
             _make_query("what wire do I cut?"), _make_session(), []
@@ -172,35 +165,19 @@ async def test_tier3_returns_answer_on_end_turn():
 
 
 @pytest.mark.asyncio
-async def test_tier3_uses_tool_to_search():
+async def test_tier3_passes_search_tool():
     from knowledge_base.query.tier3.orchestrator import Tier3Orchestrator
-    from knowledge_base.models.entry import KnowledgeEntry
 
-    entry = _make_entry("e1")
     mock_store = MagicMock()
-    mock_store.search_by_tag = AsyncMock(return_value=[entry])
+    mock_response = MagicMock()
+    mock_response.text = "Based on the search, cut the blue wire."
 
-    tool_block = MagicMock()
-    tool_block.type = "tool_use"
-    tool_block.id = "tu1"
-    tool_block.input = {"keyword": "wire"}
-
-    text_block = MagicMock()
-    text_block.text = "Based on the search, cut the blue wire."
-
-    tool_call_response = MagicMock()
-    tool_call_response.stop_reason = "tool_use"
-    tool_call_response.content = [tool_block]
-
-    end_response = MagicMock()
-    end_response.stop_reason = "end_turn"
-    end_response.content = [text_block]
-
-    with patch("knowledge_base.query.tier3.orchestrator.anthropic.AsyncAnthropic") as mock_cls:
-        mock_client = MagicMock()
-        mock_client.messages.create = AsyncMock(side_effect=[tool_call_response, end_response])
-        mock_cls.return_value = mock_client
+    with patch("knowledge_base.query.tier3.orchestrator.run_llm",
+               AsyncMock(return_value=mock_response)) as mock_run:
         orchestrator = Tier3Orchestrator(store=mock_store)
         result = await orchestrator.resolve(_make_query("which wire"), _make_session(), [])
     assert len(result) > 0
-    mock_store.search_by_tag.assert_called_once_with("wire")
+    call_kwargs = mock_run.call_args.kwargs
+    assert "tools" in call_kwargs
+    assert len(call_kwargs["tools"]) == 1
+    assert callable(call_kwargs["tools"][0])

@@ -1,12 +1,9 @@
-import json
-import base64
 from dataclasses import dataclass
-import anthropic
+from knowledge_base.llm_clients import ingestion_client
+from knowledge_base.utils.async_llm import generate_with_image
 from knowledge_base.prompts.ingestion.page_segmenter import (
-    MODEL, MAX_TOKENS, SYSTEM_PROMPT, USER_TEMPLATE,
+    MODEL, MAX_TOKENS, SYSTEM_PROMPT, USER_TEMPLATE, PageSegmenterOutput,
 )
-
-anthropic_client = anthropic.AsyncAnthropic()
 
 
 @dataclass
@@ -18,25 +15,18 @@ class SegmentationResult:
 
 class PageSegmenter:
     async def segment(self, page_image: bytes, page_number: int) -> SegmentationResult:
-        b64 = base64.standard_b64encode(page_image).decode()
-        response = await anthropic_client.messages.create(
+        response = await generate_with_image(
+            ingestion_client,
+            page_image,
+            USER_TEMPLATE.format(page_number=page_number),
+            system_instruction=SYSTEM_PROMPT,
+            response_schema=PageSegmenterOutput,
+            max_output_tokens=MAX_TOKENS,
             model=MODEL,
-            max_tokens=MAX_TOKENS,
-            system=SYSTEM_PROMPT,
-            messages=[{
-                "role": "user",
-                "content": [
-                    {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": b64}},
-                    {"type": "text", "text": USER_TEMPLATE.format(page_number=page_number)},
-                ],
-            }],
         )
-        raw = response.content[0].text.strip()
-        if raw.startswith("```"):
-            raw = raw.split("```")[1].lstrip("json").strip()
-        data = json.loads(raw)
+        parsed: PageSegmenterOutput = response.parsed
         return SegmentationResult(
             page_number=page_number,
-            text_regions=data.get("text_regions", []),
-            image_regions=data.get("image_regions", []),
+            text_regions=[r.model_dump() for r in parsed.text_regions],
+            image_regions=[r.model_dump() for r in parsed.image_regions],
         )

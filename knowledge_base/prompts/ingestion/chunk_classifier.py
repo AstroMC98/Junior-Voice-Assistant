@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-MODEL = "claude-haiku-4-5-20251001"
+MODEL = "gemini-2.5-flash"
 MAX_TOKENS = 128
 
 VALID_ENTRY_TYPES = [

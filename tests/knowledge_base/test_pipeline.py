@@ -12,10 +12,11 @@ from knowledge_base.ingestion.agents.quality_checker import QualityChecker
 @pytest.mark.asyncio
 async def test_vernacular_generator_returns_list():
     from knowledge_base.ingestion.agents.vernacular_generator import VernacularGenerator
+    from knowledge_base.prompts.ingestion.vernacular_generator import VernacularOutput
     mock_resp = MagicMock()
-    mock_resp.content = [MagicMock(text='["cut the wire", "wires module", "wire puzzle"]')]
-    with patch("knowledge_base.ingestion.agents.vernacular_generator.anthropic_client") as mock_client:
-        mock_client.messages.create = AsyncMock(return_value=mock_resp)
+    mock_resp.parsed = VernacularOutput(terms=["cut the wire", "wires module", "wire puzzle"])
+    with patch("knowledge_base.ingestion.agents.vernacular_generator.run_llm",
+               AsyncMock(return_value=mock_resp)):
         gen = VernacularGenerator()
         result = await gen.generate("Wires Module", "Defuse by cutting correct wire", ["wire", "procedure"])
     assert isinstance(result, list)
@@ -23,12 +24,13 @@ async def test_vernacular_generator_returns_list():
 
 
 @pytest.mark.asyncio
-async def test_vernacular_generator_strips_fences():
+async def test_vernacular_generator_returns_terms():
     from knowledge_base.ingestion.agents.vernacular_generator import VernacularGenerator
+    from knowledge_base.prompts.ingestion.vernacular_generator import VernacularOutput
     mock_resp = MagicMock()
-    mock_resp.content = [MagicMock(text='```json\n["alias one", "alias two"]\n```')]
-    with patch("knowledge_base.ingestion.agents.vernacular_generator.anthropic_client") as mock_client:
-        mock_client.messages.create = AsyncMock(return_value=mock_resp)
+    mock_resp.parsed = VernacularOutput(terms=["alias one", "alias two"])
+    with patch("knowledge_base.ingestion.agents.vernacular_generator.run_llm",
+               AsyncMock(return_value=mock_resp)):
         gen = VernacularGenerator()
         result = await gen.generate("T", "S", [])
     assert result == ["alias one", "alias two"]

@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-MODEL = "claude-sonnet-4-6"
+MODEL = "gemini-2.5-flash"
 MAX_TOKENS = 4096
 CONFIDENCE_THRESHOLD = 0.70
 

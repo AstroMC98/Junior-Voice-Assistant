@@ -1,4 +1,5 @@
-import anthropic
+from knowledge_base.llm_clients import query_client_haiku
+from knowledge_base.utils.async_llm import run_llm
 from knowledge_base.query.recovery.registry import BaseRecovery
 from knowledge_base.query.workflows.base import WorkflowResult
 from knowledge_base.models.session import ProcessedQuery, Session
@@ -6,8 +7,6 @@ from knowledge_base.store.knowledge_store import KnowledgeStore
 from knowledge_base.prompts.query.raw_text_fallback import (
     MODEL, MAX_TOKENS, SYSTEM_PROMPT, USER_TEMPLATE,
 )
-
-anthropic_client = anthropic.AsyncAnthropic()
 
 
 class RawTextFallbackRecovery(BaseRecovery):
@@ -27,14 +26,11 @@ class RawTextFallbackRecovery(BaseRecovery):
         if entry is None or not entry.raw_text:
             return WorkflowResult(success=False, response=None, failure_type="NO_RAW_TEXT")
 
-        response = await anthropic_client.messages.create(
+        response = await run_llm(
+            query_client_haiku.generate,
+            USER_TEMPLATE.format(raw_text=entry.raw_text[:3000], query=query.cleaned_text),
+            system_instruction=SYSTEM_PROMPT,
+            max_output_tokens=MAX_TOKENS,
             model=MODEL,
-            max_tokens=MAX_TOKENS,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": USER_TEMPLATE.format(
-                raw_text=entry.raw_text[:3000],
-                query=query.cleaned_text,
-            )}],
         )
-        answer = response.content[0].text.strip()
-        return WorkflowResult(success=True, response=answer, failure_type=None)
+        return WorkflowResult(success=True, response=response.text.strip(), failure_type=None)

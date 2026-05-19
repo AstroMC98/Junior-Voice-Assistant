@@ -1,4 +1,4 @@
-MODEL = "claude-sonnet-4-6"
+MODEL = "gemini-2.5-flash"
 MAX_TOKENS = 2048
 
 EXTRACTION_PROMPTS: dict[str, str] = {

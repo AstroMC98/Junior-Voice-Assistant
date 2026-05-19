@@ -1,12 +1,11 @@
 import re
 import json
-import anthropic
+from knowledge_base.llm_clients import query_client_haiku
+from knowledge_base.utils.async_llm import run_llm
 from knowledge_base.models.session import ProcessedQuery, Session
 from knowledge_base.prompts.query.preprocessor import (
     MODEL, MAX_TOKENS, SYSTEM_PROMPT, USER_TEMPLATE, PreprocessorOutput,
 )
-
-anthropic_client = anthropic.AsyncAnthropic()
 
 _DISFLUENCIES = re.compile(r"\b(um|uh|like|so|you know|er|hmm)\b", re.IGNORECASE)
 _CORRECTION = re.compile(
@@ -25,18 +24,15 @@ class TranscriptPreprocessor:
         if m:
             corrections.append(m.group(1))
 
-        response = await anthropic_client.messages.create(
+        response = await run_llm(
+            query_client_haiku.generate,
+            USER_TEMPLATE.format(query=cleaned),
+            system_instruction=SYSTEM_PROMPT,
+            response_schema=PreprocessorOutput,
+            max_output_tokens=MAX_TOKENS,
             model=MODEL,
-            max_tokens=MAX_TOKENS,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": USER_TEMPLATE.format(query=cleaned)}],
         )
-        raw_json = response.content[0].text.strip()
-        if "```" in raw_json:
-            parts = raw_json.split("```")
-            raw_json = parts[1].lstrip("json").strip() if len(parts) > 1 else raw_json
-
-        entities = PreprocessorOutput.model_validate(json.loads(raw_json)).model_dump()
+        entities = response.parsed.model_dump()
         uncertainty = entities.pop("uncertainty", [])
 
         return ProcessedQuery(

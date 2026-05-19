@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-MODEL = "claude-haiku-4-5-20251001"
+MODEL = "gemini-2.5-flash"
 MAX_TOKENS = 64
 
 VALID_ROLES = ["logic_diagram", "reference", "positional_layout", "state_repr", "decorative"]

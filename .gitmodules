@@ -1,0 +1,3 @@
+[submodule "LLMClient"]
+	path = LLMClient
+	url = https://github.com/AstroMC98/LLMClient.git
