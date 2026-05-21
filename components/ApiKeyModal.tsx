@@ -3,13 +3,15 @@ import { useState } from 'react'
 import { useApiKey } from '@/lib/ApiKeyContext'
 
 export default function ApiKeyModal() {
-  const { modalOpen, closeModal, setApiKey, apiKey } = useApiKey()
+  const { modalOpen, closeModal, setApiKey, apiKey, geminiKey, setGeminiKey } = useApiKey()
   const [draft, setDraft] = useState(apiKey)
+  const [geminiDraft, setGeminiDraft] = useState(geminiKey)
 
   if (!modalOpen) return null
 
   function save() {
     setApiKey(draft.trim())
+    setGeminiKey(geminiDraft.trim())
     closeModal()
   }
 
@@ -46,6 +48,36 @@ export default function ApiKeyModal() {
             onChange={e => setDraft(e.target.value)}
             placeholder="sk-ant-..."
             autoFocus
+            onKeyDown={e => e.key === 'Enter' && draft.trim() && save()}
+          />
+        </div>
+
+        <div className="col" style={{ gap: 4 }}>
+          <span style={{ fontWeight: 600, fontSize: 16 }}>
+            Gemini API Key{' '}
+            <span style={{ fontWeight: 400, color: 'var(--muted)', fontSize: 13 }}>
+              (optional — enables Gemini Live)
+            </span>
+          </span>
+          <span style={{ color: 'var(--muted)', fontSize: 13 }}>
+            Used client-side for Gemini Live voice.{' '}
+            <a
+              href="https://aistudio.google.com/apikey"
+              target="_blank"
+              rel="noreferrer"
+              style={{ color: 'var(--accent)' }}
+            >
+              Get a key →
+            </a>
+          </span>
+        </div>
+
+        <div className="field">
+          <input
+            type="password"
+            value={geminiDraft}
+            onChange={e => setGeminiDraft(e.target.value)}
+            placeholder="AIza..."
             onKeyDown={e => e.key === 'Enter' && draft.trim() && save()}
           />
         </div>
