@@ -1,11 +1,13 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Guide, SessionResponse } from '@/lib/types'
 import { API_BASE } from '@/lib/types'
 import StepDisplay from './StepDisplay'
 import ImageViewer from './ImageViewer'
 import VoiceLoop from './VoiceLoop'
+import GeminiVoiceLoop from './GeminiVoiceLoop'
+import { useApiKey } from '@/lib/ApiKeyContext'
 import ProgressCheck from './ProgressCheck'
 
 interface Props {
@@ -35,6 +37,18 @@ export default function SessionView({ guide }: Props) {
   const [showImage, setShowImage] = useState(false)
   const [lastSpeech, setLastSpeech] = useState<string | null>(null)
   const router = useRouter()
+  const { geminiKey } = useApiKey()
+
+  // Initialize from localStorage after mount to avoid SSR hydration mismatch
+  const [provider, setProvider] = useState<'whisper' | 'gemini'>('whisper')
+  useEffect(() => {
+    if (localStorage.getItem('junior_voice_provider') === 'gemini') setProvider('gemini')
+  }, [])
+
+  function handleProviderChange(p: 'whisper' | 'gemini') {
+    setProvider(p)
+    localStorage.setItem('junior_voice_provider', p)
+  }
 
   const step = guide.steps[stepIndex]
 
@@ -88,9 +102,29 @@ export default function SessionView({ guide }: Props) {
     </div>
   ) : null
 
+  const activeVoice = provider === 'gemini' && geminiKey
+    ? <GeminiVoiceLoop guide={guide} currentStepIndex={stepIndex} onResponse={handleResponse} />
+    : <VoiceLoop guide={guide} currentStepIndex={stepIndex} onResponse={handleResponse} />
+
   const voiceArea = (
     <div className="col" style={{ gap: 12 }}>
-      <VoiceLoop guide={guide} currentStepIndex={stepIndex} onResponse={handleResponse} />
+      {geminiKey && (
+        <div className="seg">
+          <button
+            className={provider === 'whisper' ? 'on' : ''}
+            onClick={() => handleProviderChange('whisper')}
+          >
+            Whisper
+          </button>
+          <button
+            className={provider === 'gemini' ? 'on' : ''}
+            onClick={() => handleProviderChange('gemini')}
+          >
+            Gemini Live
+          </button>
+        </div>
+      )}
+      {activeVoice}
       <ProgressCheck guide={guide} currentStepIndex={stepIndex} onResult={handleResponse} />
       {speechBubble}
     </div>
@@ -174,11 +208,7 @@ export default function SessionView({ guide }: Props) {
 
         {/* Right col: voice + progress */}
         <div className="dt-session-col" style={{ padding: 24 }}>
-          <div className="col" style={{ gap: 14, height: '100%' }}>
-            <VoiceLoop guide={guide} currentStepIndex={stepIndex} onResponse={handleResponse} />
-            <ProgressCheck guide={guide} currentStepIndex={stepIndex} onResult={handleResponse} />
-            {speechBubble}
-          </div>
+          {voiceArea}
         </div>
       </div>
     </>
