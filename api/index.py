@@ -21,6 +21,7 @@ from api.kv import get_guide, save_guide
 from api.blob import upload_image
 from api.claude import process_guide, session_turn
 from api.transcription import transcribe_audio
+from api.retrieve import build_guide_context
 from api.env import load_env_file
 from api.utils import generate_id, strip_html
 
@@ -155,6 +156,22 @@ async def session_endpoint(
         photo=photo,
         api_key=api_key,
     )
+
+
+@app.post("/api/retrieve")
+async def retrieve_context(
+    guide: str = Form(...),
+    currentStepIndex: int = Form(...),
+    transcript: str = Form(...),
+):
+    try:
+        guide_obj = Guide(**_json.loads(guide))
+    except (ValueError, Exception):
+        raise HTTPException(status_code=400, detail="Invalid guide payload")
+    if not (0 <= currentStepIndex < len(guide_obj.steps)):
+        raise HTTPException(status_code=400, detail="Step index out of range")
+    context = build_guide_context(guide_obj, currentStepIndex)
+    return {"context": context, "transcript": transcript}
 
 
 @app.get("/api/fetch-url")
