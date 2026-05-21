@@ -68,7 +68,11 @@ async function runGeminiTurn(
     resolveTranscript = res
     rejectSession = rej
   })
-  const responsePromise = new Promise<string>(res => { resolveResponse = res })
+  let rejectResponse!: (e: unknown) => void
+  const responsePromise = new Promise<string>((res, rej) => {
+    resolveResponse = res
+    rejectResponse = rej
+  })
 
   let phase: 'transcript' | 'response' = 'transcript'
   const transcriptParts: string[] = []
@@ -97,7 +101,7 @@ async function runGeminiTurn(
           if (msg.serverContent?.turnComplete) resolveResponse(responseParts.join(''))
         }
       },
-      onerror: (e: unknown) => rejectSession(e),
+      onerror: (e: unknown) => { rejectSession(e); rejectResponse(e) },
       onclose: () => {
         resolveTranscript(transcriptParts.join(''))
         resolveResponse(responseParts.join(''))
@@ -105,40 +109,42 @@ async function runGeminiTurn(
     },
   })
 
-  // Phase 1: send audio, await transcript
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (session as any).sendRealtimeInput({
-    mediaChunks: [{ data: base64Audio, mimeType: 'audio/webm' }],
-  })
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (session as any).sendRealtimeInput({ audioStreamEnd: true })
+  try {
+    // Phase 1: send audio, await transcript
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (session as any).sendRealtimeInput({
+      mediaChunks: [{ data: base64Audio, mimeType: 'audio/webm' }],
+    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (session as any).sendRealtimeInput({ audioStreamEnd: true })
 
-  const transcript = await transcriptPromise
+    const transcript = await transcriptPromise
 
-  // Phase 2: fetch context, inject, await response
-  const context = await fetchContext(guide, stepIndex, transcript)
-  phase = 'response'
-  const contextPrompt = context
-    ? `[Context: ${context}]\n\nUser said: ${transcript}`
-    : transcript
+    // Phase 2: fetch context, inject, await response
+    const context = await fetchContext(guide, stepIndex, transcript)
+    phase = 'response'
+    const contextPrompt = context
+      ? `[Context: ${context}]\n\nUser said: ${transcript}`
+      : transcript
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (session as any).sendClientContent({
-    turns: [{ role: 'user', parts: [{ text: contextPrompt }] }],
-    turnComplete: true,
-  })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (session as any).sendClientContent({
+      turns: [{ role: 'user', parts: [{ text: contextPrompt }] }],
+      turnComplete: true,
+    })
 
-  const responseText = await responsePromise
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ;(session as any).close()
-
-  return (
-    extractJson(responseText) ?? {
-      speech: responseText || "Sorry, I couldn't process that.",
-      action: null,
-      step: null,
-    }
-  )
+    const responseText = await responsePromise
+    return (
+      extractJson(responseText) ?? {
+        speech: responseText || "Sorry, I couldn't process that.",
+        action: null,
+        step: null,
+      }
+    )
+  } finally {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(session as any).close()
+  }
 }
 
 export default function GeminiVoiceLoop({ guide, currentStepIndex, onResponse }: Props) {

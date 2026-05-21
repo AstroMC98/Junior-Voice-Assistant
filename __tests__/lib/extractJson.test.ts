@@ -22,4 +22,9 @@ describe('extractJson', () => {
   it('returns null for empty string', () => {
     expect(extractJson('')).toBeNull()
   })
+
+  it('returns the first JSON object when text contains multiple JSON-like blocks', () => {
+    const text = '{"speech": "first", "action": null, "step": null} {"speech": "second"}'
+    expect(extractJson(text)).toEqual({ speech: 'first', action: null, step: null })
+  })
 })
